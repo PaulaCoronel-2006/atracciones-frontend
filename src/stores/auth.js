@@ -50,8 +50,15 @@ export const useAuthStore = defineStore('auth', {
         const result = await response.json();
 
         if (response.ok && result.success) {
-          this.user = result.data;
-          this.token = result.data.token;
+          const apiData = result.data;
+          this.user = {
+            id: apiData.user.userId,
+            email: apiData.user.email,
+            firstName: apiData.user.firstName || '',
+            lastName: apiData.user.lastName || '',
+            role: apiData.user.roles[0] || 'Client'
+          };
+          this.token = apiData.accessToken;
           this.saveSession();
           return { success: true, user: this.user };
         } else {
@@ -93,8 +100,15 @@ export const useAuthStore = defineStore('auth', {
         const result = await response.json();
 
         if (response.ok && result.success) {
-          this.user = result.data;
-          this.token = result.data.token;
+          const apiData = result.data;
+          this.user = {
+            id: apiData.user.userId,
+            email: apiData.user.email,
+            firstName: apiData.user.firstName || '',
+            lastName: apiData.user.lastName || '',
+            role: apiData.user.roles[0] || 'Client'
+          };
+          this.token = apiData.accessToken;
           this.saveSession();
           return { success: true, user: this.user };
         } else {
@@ -149,7 +163,15 @@ export const useAuthStore = defineStore('auth', {
         const result = await response.json();
 
         if (response.ok && result.success) {
-          this.user = { ...this.user, ...result.data };
+          const updatedUser = result.data;
+          this.user = {
+            ...this.user,
+            id: updatedUser.userId,
+            email: updatedUser.email,
+            firstName: updatedUser.firstName || '',
+            lastName: updatedUser.lastName || '',
+            role: updatedUser.roles[0] || 'Client'
+          };
           this.saveSession();
           return { success: true, user: this.user };
         }
