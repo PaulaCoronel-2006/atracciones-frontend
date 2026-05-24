@@ -5,6 +5,8 @@ import HomeView from '../views/HomeView.vue'
 import AttractionDetailView from '../views/AttractionDetailView.vue'
 import CheckoutView from '../views/CheckoutView.vue'
 import CustomerPortalView from '../views/CustomerPortalView.vue'
+import LoginView from '../views/LoginView.vue'
+import RegisterView from '../views/RegisterView.vue'
 
 import AdminDashboardView from '../views/AdminDashboardView.vue'
 import AdminAttractionEditView from '../views/AdminAttractionEditView.vue'
@@ -34,6 +36,16 @@ const routes = [
     path: '/portal',
     name: 'customer-portal',
     component: CustomerPortalView
+  },
+  {
+    path: '/login',
+    name: 'login',
+    component: LoginView
+  },
+  {
+    path: '/register',
+    name: 'register',
+    component: RegisterView
   },
 
   // --- RUTAS ADMINISTRATIVAS ---

@@ -57,6 +57,19 @@ const changeSimulationRole = (role) => {
 const toggleMobileMenu = () => {
   isMobileMenuOpen.value = !isMobileMenuOpen.value
 }
+
+const handleLogout = () => {
+  authStore.logout()
+  Swal.fire({
+    title: 'Sesión Cerrada',
+    text: 'Has cerrado sesión con éxito de tu cuenta real.',
+    icon: 'success',
+    background: '#111827',
+    color: '#f3f4f6',
+    confirmButtonColor: '#06b6d4'
+  })
+  router.push('/')
+}
 </script>
 
 <template>
@@ -127,15 +140,28 @@ const toggleMobileMenu = () => {
           </div>
         </div>
 
-        <!-- Perfil Breve -->
-        <div v-if="authStore.isAuthenticated" class="flex items-center gap-2 border-l border-white/10 pl-4">
+        <!-- Perfil Breve y Acciones Reales -->
+        <div v-if="authStore.isAuthenticated" class="flex items-center gap-3 border-l border-white/10 pl-4">
           <div class="w-8 h-8 rounded-full bg-brand-violet/20 flex items-center justify-center border border-brand-violet text-brand-violet text-sm font-bold uppercase">
-            {{ authStore.user.firstName[0] }}{{ authStore.user.lastName[0] }}
+            {{ (authStore.user?.firstName || 'C')[0] }}{{ (authStore.user?.lastName || 'U')[0] }}
           </div>
           <div class="flex flex-col text-left">
-            <span class="text-xs font-semibold text-gray-200">{{ authStore.user.firstName }}</span>
-            <span class="text-[9px] text-gray-400">{{ authStore.user.role }}</span>
+            <span class="text-xs font-semibold text-gray-200">{{ authStore.user?.firstName }}</span>
+            <span class="text-[9px] text-gray-400">{{ authStore.user?.role }}</span>
           </div>
+          <button @click="handleLogout" class="ml-2 p-1.5 rounded-lg text-gray-400 hover:text-red-400 hover:bg-white/5 transition-all cursor-pointer" title="Cerrar Sesión">
+            🚪
+          </button>
+        </div>
+
+        <!-- Botones Reales de Login y Registro -->
+        <div v-else class="flex items-center gap-3 border-l border-white/10 pl-4">
+          <router-link to="/login" class="text-sm font-semibold text-gray-300 hover:text-brand-cyan transition-all">
+            Iniciar Sesión
+          </router-link>
+          <router-link to="/register" class="text-xs font-bold bg-gradient-to-r from-brand-cyan to-brand-violet text-dark-900 px-4 py-2 rounded-full hover:shadow-brand-cyan/20 hover:scale-102 transition-all duration-300">
+            Registrarse
+          </router-link>
         </div>
       </div>
 
@@ -178,13 +204,29 @@ const toggleMobileMenu = () => {
         </router-link>
       </template>
 
-      <!-- Selección de roles flotante para móviles -->
+      <!-- Acciones de Usuario Reales para Móvil -->
       <div class="h-px bg-white/5 my-1"></div>
-      <div class="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-1">Cambiar Rol:</div>
-      <div class="grid grid-cols-2 gap-2">
-        <button v-for="item in roles" :key="item.label" @click="changeSimulationRole(item.role)" class="px-2.5 py-2 rounded-lg text-xs font-semibold glass-card border border-white/5 text-center text-gray-300">
-          {{ item.role === null ? 'Público' : item.role }}
+      <div v-if="authStore.isAuthenticated" class="flex flex-col gap-2">
+        <div class="flex items-center gap-2 px-1">
+          <div class="w-6 h-6 rounded-full bg-brand-violet/20 flex items-center justify-center border border-brand-violet text-brand-violet text-xs font-bold uppercase">
+            {{ (authStore.user?.firstName || 'C')[0] }}{{ (authStore.user?.lastName || 'U')[0] }}
+          </div>
+          <div class="flex flex-col text-left">
+            <span class="text-xs font-semibold text-gray-200">{{ authStore.user?.firstName }}</span>
+            <span class="text-[9px] text-gray-400">{{ authStore.user?.role }}</span>
+          </div>
+        </div>
+        <button @click="() => { isMobileMenuOpen = false; handleLogout(); }" class="w-full text-left px-3 py-2 rounded-lg text-xs font-semibold bg-red-500/10 hover:bg-red-500/20 text-red-400 transition-all">
+          🚪 Cerrar Sesión Real
         </button>
+      </div>
+      <div v-else class="flex flex-col gap-2">
+        <router-link to="/login" @click="isMobileMenuOpen = false" class="w-full text-center px-3 py-2 rounded-lg text-xs font-semibold bg-white/5 text-gray-200">
+          Iniciar Sesión
+        </router-link>
+        <router-link to="/register" @click="isMobileMenuOpen = false" class="w-full text-center px-3 py-2 rounded-lg text-xs font-bold bg-gradient-to-r from-brand-cyan to-brand-violet text-dark-900">
+          Registrarse
+        </router-link>
       </div>
     </div>
 
