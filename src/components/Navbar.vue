@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import Swal from 'sweetalert2'
@@ -9,6 +9,28 @@ const router = useRouter()
 
 const isMobileMenuOpen = ref(false)
 const isRoleSelectorOpen = ref(false)
+
+// Lógica de Claro / Oscuro (Dark Mode)
+const isDark = ref(localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches))
+
+const toggleTheme = () => {
+  isDark.value = !isDark.value
+  if (isDark.value) {
+    document.documentElement.classList.add('dark')
+    localStorage.setItem('theme', 'dark')
+  } else {
+    document.documentElement.classList.remove('dark')
+    localStorage.setItem('theme', 'light')
+  }
+}
+
+onMounted(() => {
+  if (isDark.value) {
+    document.documentElement.classList.add('dark')
+  } else {
+    document.documentElement.classList.remove('dark')
+  }
+})
 
 const currentUser = computed(() => authStore.user)
 const currentRole = computed(() => currentUser.value?.role || 'Invitado')
@@ -116,6 +138,16 @@ const handleLogout = () => {
 
       <!-- Selector de Rol y Usuario -->
       <div class="hidden lg:flex items-center gap-4">
+        <!-- Botón de Alternar Claro/Oscuro -->
+        <button 
+          @click="toggleTheme" 
+          class="p-2 rounded-full border border-white/5 bg-white/5 hover:border-brand-cyan/30 text-gray-300 hover:text-brand-cyan hover:bg-white/10 transition-all cursor-pointer flex items-center justify-center"
+          title="Alternar Tema Claro/Oscuro"
+        >
+          <span v-if="isDark" class="text-sm">☀️</span>
+          <span v-else class="text-sm">🌙</span>
+        </button>
+
         <!-- Selector flotante de roles de prueba -->
         <div class="relative">
           <button @click="isRoleSelectorOpen = !isRoleSelectorOpen" class="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold glass-card border border-brand-cyan/20 text-brand-cyan hover:bg-brand-cyan/10 transition-all cursor-pointer">
@@ -167,6 +199,16 @@ const handleLogout = () => {
 
       <!-- Hamburguesa Móvil -->
       <div class="lg:hidden flex items-center gap-3">
+        <!-- Botón de Alternar Claro/Oscuro Móvil -->
+        <button 
+          @click="toggleTheme" 
+          class="p-1.5 rounded-full border border-white/5 bg-white/5 text-gray-300 hover:text-brand-cyan transition-all"
+          title="Alternar Tema Claro/Oscuro"
+        >
+          <span v-if="isDark" class="text-xs">☀️</span>
+          <span class="text-xs" v-else>🌙</span>
+        </button>
+
         <button @click="isRoleSelectorOpen = !isRoleSelectorOpen" class="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold glass-card border border-brand-cyan/20 text-brand-cyan">
           {{ currentRole }}
         </button>
