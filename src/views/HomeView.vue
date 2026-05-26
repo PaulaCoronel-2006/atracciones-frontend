@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useCatalogStore } from '../stores/catalog'
 
 const catalogStore = useCatalogStore()
@@ -8,6 +8,10 @@ const searchQuery = ref('')
 const selectedCategoryId = ref('')
 
 const categories = computed(() => catalogStore.categories)
+
+onMounted(async () => {
+  await catalogStore.fetchAttractions()
+})
 
 // Filtrar las atracciones por búsqueda de texto y categoría seleccionada
 const filteredAttractions = computed(() => {

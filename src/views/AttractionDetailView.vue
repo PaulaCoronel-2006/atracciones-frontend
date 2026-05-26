@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useCatalogStore } from '../stores/catalog'
 import { useBookingStore } from '../stores/booking'
@@ -19,31 +19,34 @@ const authStore = useAuthStore()
 const slug = route.params.slug
 const attraction = computed(() => catalogStore.getAttractionBySlug(slug))
 
-// Si no existe, redirigir al Home
-onMounted(() => {
-  if (!attraction.value) {
-    router.push('/')
-  }
-})
-
 // Estados de la Galería
 const activeImageUrl = ref('')
 const currentMedia = computed(() => attraction.value?.media || [])
-onMounted(() => {
-  if (currentMedia.value.length > 0) {
-    activeImageUrl.value = currentMedia.value.find(m => m.is_main)?.url || currentMedia.value[0].url
-  }
-})
 
 // Motor de Reservas: Estados
 const selectedOptionId = ref('')
 const selectedSlot = ref(null)
 const passengerCount = ref(1)
 
-// Iniciar con la primera opción de producto disponible
-onMounted(() => {
-  if (attraction.value?.product_options?.length > 0) {
-    selectedOptionId.value = attraction.value.product_options[0].id
+// Inicializar y observar cambios en los datos de la atracción para evitar vistas vacías
+watch(attraction, (newVal) => {
+  if (newVal) {
+    if (currentMedia.value.length > 0 && !activeImageUrl.value) {
+      activeImageUrl.value = currentMedia.value.find(m => m.is_main)?.url || currentMedia.value[0].url
+    }
+    if (newVal.product_options?.length > 0 && !selectedOptionId.value) {
+      selectedOptionId.value = newVal.product_options[0].id
+    }
+  }
+}, { immediate: true })
+
+onMounted(async () => {
+  // Intentar obtener detalles del backend
+  await catalogStore.fetchAttractionBySlug(slug)
+  
+  // Si no existe ni local ni en backend, redirigir al Home
+  if (!attraction.value) {
+    router.push('/')
   }
 })
 

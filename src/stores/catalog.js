@@ -97,18 +97,32 @@ export const useCatalogStore = defineStore('catalog', {
         const result = await response.json();
         if (response.ok && result.success) {
           // Si el backend responde con éxito, mapeamos sus datos a la estructura que el front espera
-          this.attractions = result.data.items.map(item => ({
-            id: item.id,
-            name: item.name,
-            slug: item.slug,
-            price_base: item.priceBase,
-            rating: item.rating || 5.0,
-            review_count: item.reviewCount || 0,
-            media: [{ id: 'm-default', url: item.mediaUrl || 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=800', is_main: true }],
-            is_active: item.isActive ?? true,
-            is_published: item.isPublished ?? true,
-            description: item.description || ''
-          }));
+          this.attractions = result.data.items.map(item => {
+            // Mapear locationName a location_id local
+            const loc = this.locations.find(l => l.name.toLowerCase() === item.locationName?.toLowerCase())
+            const locationId = loc ? loc.id : 'l3' // default a Quito 'l3'
+
+            // Mapear subcategoryName a subcategory_id local
+            const subcat = this.subcategories.find(s => s.name.toLowerCase() === item.subcategoryName?.toLowerCase())
+            const subcategoryId = subcat ? subcat.id : 's3' // default a Tours 's3'
+
+            return {
+              id: item.id,
+              name: item.name,
+              slug: item.slug,
+              price_base: item.startingPrice || 0.0,
+              rating: item.ratingAverage || 5.0,
+              review_count: item.ratingCount || 0,
+              media: [{ id: 'm-default', url: item.mainImageUrl || 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=800', is_main: true }],
+              is_active: item.isActive ?? true,
+              is_published: item.isPublished ?? true,
+              description: item.descriptionShort || '',
+              location_id: locationId,
+              subcategory_id: subcategoryId,
+              tags: []
+            };
+          });
+          this.saveToStorage();
           return { success: true };
         }
       } catch (error) {
@@ -127,23 +141,54 @@ export const useCatalogStore = defineStore('catalog', {
         const result = await response.json();
         if (response.ok && result.success) {
           const detail = result.data;
+          
+          // Mapear locationName a location_id local
+          const loc = this.locations.find(l => l.name.toLowerCase() === detail.locationName?.toLowerCase())
+          const locationId = loc ? loc.id : 'l3' // default a Quito 'l3'
+
+          // Mapear subcategoryName a subcategory_id local
+          const subcat = this.subcategories.find(s => s.name.toLowerCase() === detail.subcategoryName?.toLowerCase())
+          const subcategoryId = subcat ? subcat.id : 's3' // default a Tours 's3'
+
           // Actualizar o añadir la atracción detallada en el estado
           const item = {
             id: detail.id,
             name: detail.name,
             slug: detail.slug,
-            description: detail.description,
-            price_base: detail.priceBase,
-            rating: detail.rating || 5.0,
-            location_id: detail.locationId,
-            product_options: detail.productOptions?.map(po => ({
+            description: detail.descriptionFull || detail.descriptionShort || '',
+            price_base: detail.products?.[0]?.priceTiers?.[0]?.price || 0.0,
+            rating: detail.ratingAverage || 5.0,
+            review_count: detail.ratingCount || 0,
+            location_id: locationId,
+            subcategory_id: subcategoryId,
+            media: detail.gallery?.map(m => ({
+              url: m.url,
+              is_main: m.isMain
+            })) || [{ id: 'm-default', url: 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=800', is_main: true }],
+            inclusions: detail.inclusions?.map(inc => ({
+              inclusion_item_id: inc.inclusionItemId || inc.id,
+              type: inc.type === 'not_included' ? 'excluded' : inc.type
+            })) || [],
+            itinerary: detail.itinerary?.stops?.map(stop => ({
+              stop_number: stop.stopNumber,
+              name: stop.name,
+              duration: stop.durationMinutes ? `${stop.durationMinutes}m` : '30m',
+              is_included: stop.admissionType === 'included'
+            })) || [],
+            product_options: detail.products?.map(po => ({
               id: po.id,
               title: po.title,
               price_tiers: po.priceTiers?.map(pt => ({
-                label: pt.label,
+                label: pt.categoryName || 'Adulto',
                 price: pt.price
               }))
-            })) || []
+            })) || [],
+            location_coords: {
+              lat: detail.latitude ? Number(detail.latitude) : -0.1807,
+              lng: detail.longitude ? Number(detail.longitude) : -78.4678,
+              placeName: detail.meetingPoint || detail.address || 'Quito, Ecuador'
+            },
+            tags: detail.tags?.map(t => t.id) || []
           };
           const index = this.attractions.findIndex(a => a.slug === slug);
           if (index !== -1) {
@@ -151,6 +196,7 @@ export const useCatalogStore = defineStore('catalog', {
           } else {
             this.attractions.push(item);
           }
+          this.saveToStorage();
           return item;
         }
       } catch (error) {
