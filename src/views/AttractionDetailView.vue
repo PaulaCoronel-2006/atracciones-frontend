@@ -40,6 +40,13 @@ watch(attraction, (newVal) => {
   }
 }, { immediate: true })
 
+// Obtener slots de disponibilidad reales del backend cuando cambia la opción seleccionada
+watch(selectedOptionId, async (newVal) => {
+  if (newVal) {
+    await bookingStore.fetchSlots(newVal)
+  }
+}, { immediate: true })
+
 onMounted(async () => {
   // Intentar obtener detalles del backend
   await catalogStore.fetchAttractionBySlug(slug)

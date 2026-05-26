@@ -56,6 +56,52 @@ export const useBookingStore = defineStore('booking', {
       ).sort((a,b) => a.slotDate.localeCompare(b.slotDate) || a.startTime.localeCompare(b.startTime))
     },
 
+    async fetchSlots(optionId) {
+      try {
+        const baseUrl = import.meta.env.VITE_API_BASE_URL;
+        const response = await fetch(`${baseUrl}/booking/booking/disponibilidad/${optionId}`, {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' }
+        });
+        const result = await response.json();
+        if (response.ok && result.success && Array.isArray(result.data)) {
+          // Aplanar y mapear el listado de disponibilidad diaria a la lista de slots que el frontend consume
+          const fetchedSlots = [];
+          result.data.forEach(day => {
+            const dateStr = day.fecha;
+            day.horarios.forEach(h => {
+              fetchedSlots.push({
+                id: h.slotId,
+                productId: optionId,
+                slotDate: dateStr,
+                startTime: h.horaInicio,
+                endTime: h.horaFin || this.calculateEndTime(h.horaInicio),
+                capacityTotal: h.cuposTotales,
+                capacityAvailable: h.cuposDisponibles,
+                isActive: true
+              });
+            });
+          });
+
+          // Filtrar y actualizar los slots para esta opción en el estado actual, manteniendo otros
+          const otherSlots = this.slots.filter(s => s.productId !== optionId);
+          this.slots = [...otherSlots, ...fetchedSlots];
+          this.saveToStorage();
+          return { success: true };
+        }
+      } catch (error) {
+        console.warn('Error al obtener cupos de disponibilidad del backend.', error);
+      }
+      return { success: false };
+    },
+
+    calculateEndTime(startTime) {
+      if (!startTime) return '12:00';
+      const [h, m] = startTime.split(':').map(Number);
+      const endHour = (h + 2) % 24;
+      return `${String(endHour).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+    },
+
     async fetchMisReservas(token) {
       try {
         const baseUrl = import.meta.env.VITE_API_BASE_URL;
