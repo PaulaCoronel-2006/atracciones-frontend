@@ -6,11 +6,15 @@ const catalogStore = useCatalogStore()
 
 const searchQuery = ref('')
 const selectedCategoryId = ref('')
-
-const categories = computed(() => catalogStore.categories)
+const isLoading = ref(false)
 
 onMounted(async () => {
-  await catalogStore.fetchAttractions()
+  isLoading.value = true
+  try {
+    await catalogStore.fetchAttractions()
+  } finally {
+    isLoading.value = false
+  }
 })
 
 // Filtrar las atracciones por búsqueda de texto y categoría seleccionada
@@ -125,8 +129,15 @@ const getLocationLabel = (locationId) => {
         </h2>
       </div>
 
+      <!-- Estado de carga -->
+      <div v-if="isLoading" class="glass-card rounded-2xl p-12 text-center border border-dark-700 flex flex-col items-center justify-center gap-3">
+        <div class="animate-spin inline-block w-8 h-8 border-4 border-brand-cyan border-t-transparent rounded-full mb-2"></div>
+        <h3 class="text-text-primary font-bold text-base">Conectando con la base de datos...</h3>
+        <p class="text-text-secondary text-xs">Recuperando aventuras exclusivas desde Supabase. Por favor, espera un momento.</p>
+      </div>
+
       <!-- Estado vacío -->
-      <div v-if="filteredAttractions.length === 0" class="glass-card rounded-2xl p-12 text-center border border-dark-700">
+      <div v-else-if="filteredAttractions.length === 0" class="glass-card rounded-2xl p-12 text-center border border-dark-700">
         <span class="text-4xl">🔍</span>
         <h3 class="text-text-primary font-bold text-lg mt-3">No se encontraron atracciones</h3>
         <p class="text-text-secondary text-sm mt-1">Prueba a buscar con otros términos o cambia la categoría de filtro.</p>
