@@ -137,11 +137,13 @@ export const useBookingStore = defineStore('booking', {
     async createBooking(userId, bookingRequest, token) {
       try {
         const baseUrl = import.meta.env.VITE_API_BASE_URL;
-        const response = await fetch(`${baseUrl}/booking/booking`, {
+        const idempotencyKey = crypto.randomUUID();
+        const response = await fetch(`${baseUrl}/booking/v2/booking`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
+            'Authorization': `Bearer ${token}`,
+            'Idempotency-Key': idempotencyKey
           },
           body: JSON.stringify({
             slotId: bookingRequest.slotId,
