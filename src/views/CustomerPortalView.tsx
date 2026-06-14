@@ -258,7 +258,7 @@ const CustomerPortalView: React.FC = () => {
                           <div className="flex flex-col text-right pr-4 border-r border-surface-variant">
                             <span className="text-[9px] text-outline uppercase font-semibold">Fecha de Viaje</span>
                             <span className="text-xs font-bold text-primary">
-                              {booking.slotDate.split('-').reverse().join('/')} a las {booking.slotStartTime} hs
+                              {booking.slotDate?.includes('-') ? booking.slotDate.split('-').reverse().join('/') : (booking.slotDate || 'Sin fecha')} a las {booking.slotStartTime || '--:--'} hs
                             </span>
                           </div>
 
@@ -307,7 +307,7 @@ const CustomerPortalView: React.FC = () => {
                               <div className="flex flex-col text-right">
                                 <span className="text-[9px] text-outline font-semibold">TOTAL FACTURADO</span>
                                 <span className="font-black text-sm text-primary">
-                                  ${booking.totalAmount.toFixed(2)} {booking.currencyCode || 'USD'}
+                                  ${(booking.totalAmount ?? 0).toFixed(2)} {booking.currencyCode || 'USD'}
                                 </span>
                               </div>
                             </div>

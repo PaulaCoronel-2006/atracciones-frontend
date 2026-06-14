@@ -262,6 +262,9 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
         headers,
         body: JSON.stringify({
           slotId: bookingRequest.slotId,
+          attractionId: bookingRequest.attractionId,
+          attractionName: bookingRequest.attractionName,
+          productTitle: bookingRequest.productTitle,
           notes: bookingRequest.notes || '',
           passengers: bookingRequest.passengers.map(p => {
             const parts = p.fullName.trim().split(/\s+/);
@@ -271,9 +274,10 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
               firstName,
               lastName,
               documentNumber: p.documentNumber,
-              ticketCategoryName: p.priceTierLabel,
+              priceTierLabel: p.priceTierLabel,
               unitPrice: p.unitPrice,
-              priceTierId: p.priceTierId || '3fa85f64-5717-4562-b3fc-2c963f66afa6'
+              priceTierId: p.priceTierId || '3fa85f64-5717-4562-b3fc-2c963f66afa6',
+              quantity: 1
             };
           })
         })
@@ -282,15 +286,16 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
       const result = await response.json();
 
       if (response.ok && result.success) {
+        const slot = slots.find(s => s.id === bookingRequest.slotId);
         const newBooking: BookingResponse = {
           id: result.data.id,
           pnrCode: result.data.pnrCode,
           statusName: result.data.statusName,
-          totalAmount: result.data.totalAmount,
+          totalAmount: result.data.totalAmount || bookingRequest.totalAmount || 0,
           currencyCode: result.data.currencyCode || 'USD',
-          slotDate: result.data.slotDate,
-          slotStartTime: result.data.slotStartTime,
-          attractionName: result.data.attractionName,
+          slotDate: result.data.slotDate || slot?.slotDate || '',
+          slotStartTime: result.data.slotStartTime || slot?.startTime || '',
+          attractionName: result.data.attractionName || bookingRequest.attractionName || '',
           passengers: bookingRequest.passengers
         };
         const newBookings = [newBooking, ...bookings];
