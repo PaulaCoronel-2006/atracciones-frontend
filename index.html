@@ -2,22 +2,31 @@
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>✨</text></svg>" />
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏨</text></svg>" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     
-    <title>Atracciones Premium | Experiencias y Reservas Inolvidables</title>
-    <meta name="description" content="Reserva tours compartidos y privados en las atracciones turísticas más exclusivas. Acceso premium, disponibilidad en tiempo real y portal de reservas interactivo." />
+    <title>HospédateEC | Reserva de Atracciones y Experiencias</title>
+    <meta name="description" content="Reserva atracciones, tours y experiencias inolvidables en todo el mundo con confirmación instantánea en HospédateEC." />
 
-    <!-- Google Fonts -->
+    <!-- Google Fonts: Open Sans -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+
+    <!-- Material Symbols Outlined -->
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap" rel="stylesheet" />
 
     <!-- Leaflet CSS for Interactive Map -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    
+    <style>
+      .material-symbols-outlined {
+        font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      }
+    </style>
   </head>
-  <body class="bg-dark-900 text-text-primary font-sans min-h-screen selection:bg-brand-cyan selection:text-dark-900 overflow-x-hidden transition-colors duration-200">
-    <div id="app"></div>
-    <script type="module" src="/src/main.js"></script>
+  <body class="bg-background text-on-background font-body-lg min-h-screen selection:bg-secondary-fixed selection:text-on-secondary-fixed antialiased">
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
