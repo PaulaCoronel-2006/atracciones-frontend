@@ -55,6 +55,7 @@ interface BookingContextType {
   getAvailability: (optionId: string, startDate: string, endDate: string) => AttractionSlot[];
   fetchSlots: (optionId: string) => Promise<{ success: boolean }>;
   fetchMisReservas: (token: string) => Promise<{ success: boolean }>;
+  fetchManagementBookings: (token: string) => Promise<{ success: boolean }>;
   createBooking: (userId: string | undefined, bookingRequest: BookingRequest, token: string | null) => Promise<{ success: boolean; message?: string; booking?: BookingResponse }>;
   cancelBooking: (bookingId: string, cancelReason: string, token: string) => Promise<{ success: boolean; message?: string }>;
   generateScheduleMassive: (optionId: string, data: { startDate: string; endDate: string; startTime: string; endTime: string; capacity: number; daysOfWeek: number[] }) => number;
@@ -201,6 +202,45 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
       }
     } catch (error) {
       console.warn('Backend de reservas no disponible. Usando datos locales de respaldo.', error);
+    }
+    return { success: false };
+  };
+
+  const fetchManagementBookings = async (token: string) => {
+    try {
+      const baseUrl = import.meta.env.VITE_API_BASE_URL;
+      const response = await fetch(`${baseUrl}/booking/admin-booking/management`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      const result = await response.json();
+      if (response.ok && result.success) {
+        const items = result.data.items || [];
+        const mapped = items.map((b: any) => ({
+          id: b.id,
+          pnrCode: b.pnrCode,
+          statusName: b.statusName,
+          totalAmount: b.totalAmount,
+          currencyCode: b.currencyCode || 'USD',
+          slotDate: b.slotDate,
+          slotStartTime: b.slotStartTime,
+          attractionName: b.attractionName,
+          passengers: b.tickets?.map((t: any) => ({
+            fullName: b.clientName || 'Pasajero',
+            documentNumber: '-',
+            priceTierLabel: t.categoryName,
+            unitPrice: t.unitPrice
+          })) || [],
+          notes: b.notes || ''
+        }));
+        saveBookings(mapped);
+        return { success: true };
+      }
+    } catch (error) {
+      console.warn('Error al obtener las reservas de administración del backend.', error);
     }
     return { success: false };
   };
@@ -397,6 +437,7 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
       getAvailability,
       fetchSlots,
       fetchMisReservas,
+      fetchManagementBookings,
       createBooking,
       cancelBooking,
       generateScheduleMassive,

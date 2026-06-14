@@ -1,12 +1,18 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useBooking, BookingResponse } from '../context/BookingContext';
 import { useAuth } from '../context/AuthContext';
 import Swal from 'sweetalert2';
 
 const AdminBookingListView: React.FC = () => {
-  const { bookings, cancelBooking, fetchMisReservas } = useBooking();
+  const { bookings, cancelBooking, fetchManagementBookings } = useBooking();
   const { token } = useAuth();
+
+  useEffect(() => {
+    if (token) {
+      fetchManagementBookings(token);
+    }
+  }, [token]);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStatusFilter, setSelectedStatusFilter] = useState<'all' | 'confirmed' | 'completed' | 'cancelled'>('all');
@@ -96,7 +102,7 @@ const AdminBookingListView: React.FC = () => {
             icon: 'success',
             confirmButtonColor: '#0058bc'
           });
-          fetchMisReservas(token);
+          fetchManagementBookings(token);
         } else {
           Swal.fire({
             title: 'Error',

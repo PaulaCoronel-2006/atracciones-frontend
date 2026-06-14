@@ -111,12 +111,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (response.ok && result.success) {
         const apiData = result.data;
+        const roles = apiData.user.roles || [];
+        const resolvedRole = roles.includes('Admin') ? 'Admin' : (roles.includes('Partner') ? 'Partner' : 'Client');
         const loggedUser: User = {
           id: apiData.user.userId,
           email: apiData.user.email,
           firstName: apiData.user.firstName || '',
           lastName: apiData.user.lastName || '',
-          role: apiData.user.roles[0] || 'Client'
+          role: resolvedRole
         };
         saveSession(loggedUser, apiData.accessToken);
         return { success: true, user: loggedUser };
@@ -159,12 +161,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (response.ok && result.success) {
         const apiData = result.data;
+        const roles = apiData.user.roles || [];
+        const resolvedRole = roles.includes('Admin') ? 'Admin' : (roles.includes('Partner') ? 'Partner' : 'Client');
         const loggedUser: User = {
           id: apiData.user.userId,
           email: apiData.user.email,
           firstName: apiData.user.firstName || '',
           lastName: apiData.user.lastName || '',
-          role: apiData.user.roles[0] || 'Client'
+          role: resolvedRole
         };
         saveSession(loggedUser, apiData.accessToken);
         return { success: true, user: loggedUser };
@@ -218,13 +222,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (response.ok && result.success) {
         const updatedUser = result.data;
+        const roles = updatedUser.roles || [];
+        const resolvedRole = roles.includes('Admin') ? 'Admin' : (roles.includes('Partner') ? 'Partner' : 'Client');
         const newUser: User = {
           ...user,
           id: updatedUser.userId,
           email: updatedUser.email,
           firstName: updatedUser.firstName || '',
           lastName: updatedUser.lastName || '',
-          role: updatedUser.roles[0] || 'Client'
+          role: resolvedRole
         };
         saveSession(newUser, token);
         return { success: true, user: newUser };
