@@ -29,6 +29,29 @@ const steps = [
   { step: 7, label: 'Revisión & Calidad', desc: 'Previsualización y publicación' }
 ];
 
+const initialFormState: Partial<AttractionDetail> = {
+  name: '',
+  subcategory_id: '',
+  description: '',
+  is_active: true,
+  is_published: false,
+  location_coords: { lat: -0.2201, lng: -78.5122, placeName: '' },
+  tags: [],
+  inclusions: [],
+  media: [],
+  itinerary: [],
+  product_options: [
+    {
+      id: 'po-temp-1',
+      title: 'Tour Compartido Estándar',
+      price_tiers: [
+        { label: 'Adulto', age_min: 18, age_max: 99, price: 45.00 },
+        { label: 'Niño', age_min: 5, age_max: 17, price: 25.00 }
+      ]
+    }
+  ]
+};
+
 const AdminAttractionEditView: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -49,6 +72,7 @@ const AdminAttractionEditView: React.FC = () => {
 
   const isEditing = !!id;
   const [currentStep, setCurrentStep] = useState<number>(1);
+  const [isSaved, setIsSaved] = useState<boolean>(false);
 
   // Estados de Ubicación Jerárquica
   const [selectedCountryId, setSelectedCountryId] = useState('');
@@ -81,7 +105,7 @@ const AdminAttractionEditView: React.FC = () => {
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // Cargar datos al editar
+  // Cargar datos al editar o creación limpia
   useEffect(() => {
     if (isEditing && id) {
       const attraction = attractions.find(a => a.id === id);
@@ -125,20 +149,25 @@ const AdminAttractionEditView: React.FC = () => {
           // Ignore
         }
       } else {
-        if (subcategories.length > 0) {
-          setForm(prev => ({ ...prev, subcategory_id: subcategories[0].id }));
-        }
+        // Creación limpia: resetear todos los campos
+        setForm({
+          ...initialFormState,
+          subcategory_id: subcategories[0]?.id || ''
+        });
         const ecuador = locations.find(l => l.name === 'Ecuador' && l.type === 'Country');
         if (ecuador) {
           setSelectedCountryId(ecuador.id);
         }
+        setSelectedStateId('');
+        setSelectedCityId('');
+        setCurrentStep(1);
       }
     }
   }, [id, isEditing, attractions, locations, subcategories, navigate]);
 
   // Autoguardado dinámico de borrador local
   useEffect(() => {
-    if (!isEditing) {
+    if (!isEditing && !isSaved) {
       const draftData = {
         form,
         country: selectedCountryId,
@@ -148,7 +177,7 @@ const AdminAttractionEditView: React.FC = () => {
       };
       localStorage.setItem('hospedate_attraction_draft', JSON.stringify(draftData));
     }
-  }, [form, selectedCountryId, selectedStateId, selectedCityId, currentStep, isEditing]);
+  }, [form, selectedCountryId, selectedStateId, selectedCityId, currentStep, isEditing, isSaved]);
 
   const cleanDraft = () => {
     localStorage.removeItem('hospedate_attraction_draft');
@@ -742,6 +771,7 @@ const AdminAttractionEditView: React.FC = () => {
       }
 
       if (success) {
+        setIsSaved(true);
         cleanDraft();
         Swal.fire({
           title: isEditing ? '¡Atracción Actualizada!' : '¡Atracción Creada!',

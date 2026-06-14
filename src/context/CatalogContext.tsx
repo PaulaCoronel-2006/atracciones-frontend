@@ -1,6 +1,33 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { AttractionSummary, AttractionProductOption } from './CartContext';
 
+const mapMockIdToDbGuid = (id: string | undefined): string => {
+  if (!id) return '33333333-3333-3333-3333-333333333333'; // Default to Quito
+  const cleanId = id.trim().toLowerCase();
+  
+  // Mapping Locations
+  if (cleanId === 'l1') return '11111111-1111-1111-1111-111111111111'; // Ecuador
+  if (cleanId === 'l2') return '22222222-2222-2222-2222-222222222222'; // Pichincha
+  if (cleanId === 'l3') return '33333333-3333-3333-3333-333333333333'; // Quito
+  if (cleanId === 'l4' || cleanId === 'l5') return '33333333-3333-3333-3333-333333333333'; // Galapagos/Santa Cruz mapped to Quito
+  if (cleanId === 'l6' || cleanId === 'l7') return '33333333-3333-3333-3333-333333333333'; // Azuay/Cuenca mapped to Quito
+
+  // Mapping Subcategories
+  if (cleanId === 's1' || cleanId === 'd1d1d1d1-d1d1-d1d1-d1d1-d1d1d1d1d1d1') return 'd1d1d1d1-d1d1-d1d1-d1d1-d1d1d1d1d1d1'; // Senderismo & Trekking
+  if (cleanId === 's2' || cleanId === 'd3d3d3d3-d3d3-d3d3-d3d3-d3d3d3d3d3d3') return 'd1d1d1d1-d1d1-d1d1-d1d1-d1d1d1d1d1d1'; // Buceo mapped to Senderismo to prevent FK errors
+  if (cleanId === 's3' || cleanId === 'd4d4d4d4-d4d4-d4d4-d4d4-d4d4d4d4d4d4') return 'd3d3d3d3-d3d3-d3d3-d3d3-d3d3d3d3d3d3'; // Tours de la Ciudad
+  if (cleanId === 's4' || cleanId === 'd4d4d4d4-d4d4-d4d4-d4d4-d4d4d4d4d4d4') return 'd4d4d4d4-d4d4-d4d4-d4d4-d4d4d4d4d4d4'; // Museos & Monumentos
+  if (cleanId === 's5' || cleanId === 'd5d5d5d5-d5d5-d5d5-d5d5-d5d5d5d5d5d5') return 'd5d5d5d5-d5d5-d5d5-d5d5-d5d5d5d5d5d5'; // Degustaciones de Comida
+
+  // If it's already a valid Guid, return it
+  const guidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  if (guidRegex.test(cleanId)) {
+    return cleanId;
+  }
+
+  return '33333333-3333-3333-3333-333333333333'; // Default to Quito
+};
+
 export interface LocationItem {
   id: string;
   name: string;
@@ -265,9 +292,14 @@ export const CatalogProvider: React.FC<{ children: React.ReactNode }> = ({ child
         },
         body: JSON.stringify({
           name: attractionData.name,
-          locationId: attractionData.location_id,
-          subcategoryId: attractionData.subcategory_id,
-          description: attractionData.description
+          locationId: mapMockIdToDbGuid(attractionData.location_id),
+          subcategoryId: mapMockIdToDbGuid(attractionData.subcategory_id),
+          descriptionShort: attractionData.description || '',
+          descriptionFull: attractionData.description || '',
+          address: attractionData.location_coords?.placeName || 'Quito, Ecuador',
+          latitude: attractionData.location_coords?.lat || -0.2201,
+          longitude: attractionData.location_coords?.lng || -78.5122,
+          difficultyLevel: 'moderate'
         })
       });
 
@@ -276,6 +308,7 @@ export const CatalogProvider: React.FC<{ children: React.ReactNode }> = ({ child
         await fetchAttractions();
         return { success: true };
       }
+      return { success: false, message: result.message || 'Error al guardar en el servidor.' };
     } catch (error) {
       // Fallback local
       const newAttraction: AttractionDetail = {
@@ -307,7 +340,6 @@ export const CatalogProvider: React.FC<{ children: React.ReactNode }> = ({ child
       saveToStorage(newAttractions);
       return { success: true, attraction: newAttraction };
     }
-    return { success: false };
   };
 
   const updateAttraction = async (id: string, updatedData: Partial<AttractionDetail>, token: string) => {
@@ -319,13 +351,25 @@ export const CatalogProvider: React.FC<{ children: React.ReactNode }> = ({ child
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify(updatedData)
+        body: JSON.stringify({
+          name: updatedData.name,
+          locationId: mapMockIdToDbGuid(updatedData.location_id),
+          subcategoryId: mapMockIdToDbGuid(updatedData.subcategory_id),
+          descriptionShort: updatedData.description || '',
+          descriptionFull: updatedData.description || '',
+          address: updatedData.location_coords?.placeName || 'Quito, Ecuador',
+          latitude: updatedData.location_coords?.lat || -0.2201,
+          longitude: updatedData.location_coords?.lng || -78.5122,
+          difficultyLevel: 'moderate'
+        })
       });
 
-      if (response.ok) {
+      const result = await response.json();
+      if (response.ok && result.success) {
         await fetchAttractions();
         return { success: true };
       }
+      return { success: false, message: result.message || 'Error al actualizar en el servidor.' };
     } catch (error) {
       // Fallback local
       const newAttractions = attractions.map(a => {
@@ -337,7 +381,6 @@ export const CatalogProvider: React.FC<{ children: React.ReactNode }> = ({ child
       saveToStorage(newAttractions);
       return { success: true };
     }
-    return { success: false };
   };
 
   const deleteAttraction = async (id: string, token: string) => {
