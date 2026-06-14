@@ -14,7 +14,9 @@ export interface BookingRequest {
   notes?: string;
   attractionId: string;
   attractionName: string;
+  productOptionId: string;
   productTitle: string;
+  currency?: string;
   totalAmount: number;
   passengers: Array<{
     fullName: string;
@@ -186,17 +188,28 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
       });
       const result = await response.json();
       if (response.ok && result.success) {
-        const mapped = result.data.map((b: any) => ({
-          id: b.id,
-          pnrCode: b.pnrCode,
-          statusName: b.statusName,
-          totalAmount: b.totalAmount,
-          currencyCode: b.currencyCode || 'USD',
-          slotDate: b.slotDate,
-          slotStartTime: b.slotStartTime,
-          attractionName: b.attractionName,
-          passengers: b.passengers || []
-        }));
+        const mapped = result.data.map((b: any) => {
+          let sDate = '';
+          let sTime = '';
+          if (b.activityDate) {
+            const parts = b.activityDate.split('T');
+            sDate = parts[0];
+            if (parts[1]) {
+              sTime = parts[1].substring(0, 5);
+            }
+          }
+          return {
+            id: b.bookingId || b.id,
+            pnrCode: b.pnrCode,
+            statusName: b.status || b.statusName,
+            totalAmount: b.totalAmount,
+            currencyCode: b.currency || b.currencyCode || 'USD',
+            slotDate: sDate || b.slotDate || '',
+            slotStartTime: sTime || b.slotStartTime || '',
+            attractionName: b.attractionName,
+            passengers: b.passengers || []
+          };
+        });
         saveBookings(mapped);
         return { success: true };
       }
@@ -263,8 +276,10 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
         body: JSON.stringify({
           slotId: bookingRequest.slotId,
           attractionId: bookingRequest.attractionId,
+          productOptionId: bookingRequest.productOptionId,
           attractionName: bookingRequest.attractionName,
           productTitle: bookingRequest.productTitle,
+          currency: bookingRequest.currency || 'USD',
           notes: bookingRequest.notes || '',
           passengers: bookingRequest.passengers.map(p => {
             const parts = p.fullName.trim().split(/\s+/);
@@ -287,14 +302,25 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
       if (response.ok && result.success) {
         const slot = slots.find(s => s.id === bookingRequest.slotId);
+        
+        let sDate = '';
+        let sTime = '';
+        if (result.data.activityDate) {
+          const parts = result.data.activityDate.split('T');
+          sDate = parts[0];
+          if (parts[1]) {
+            sTime = parts[1].substring(0, 5);
+          }
+        }
+
         const newBooking: BookingResponse = {
-          id: result.data.id,
+          id: result.data.bookingId || result.data.id,
           pnrCode: result.data.pnrCode,
-          statusName: result.data.statusName,
+          statusName: result.data.status || result.data.statusName,
           totalAmount: result.data.totalAmount || bookingRequest.totalAmount || 0,
-          currencyCode: result.data.currencyCode || 'USD',
-          slotDate: result.data.slotDate || slot?.slotDate || '',
-          slotStartTime: result.data.slotStartTime || slot?.startTime || '',
+          currencyCode: result.data.currency || result.data.currencyCode || 'USD',
+          slotDate: sDate || slot?.slotDate || '',
+          slotStartTime: sTime || slot?.startTime || '',
           attractionName: result.data.attractionName || bookingRequest.attractionName || '',
           passengers: bookingRequest.passengers
         };

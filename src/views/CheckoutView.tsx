@@ -117,8 +117,10 @@ const CheckoutView: React.FC = () => {
       const bookingRequest = {
         slotId: slot.id,
         attractionId: attraction.id,
+        productOptionId: option.id,
         attractionName: attraction.name,
         productTitle: option.title,
+        currency: 'USD',
         totalAmount: grandTotal,
         notes: 'Reserva realizada vía web.',
         passengers: passengers.map(p => ({

@@ -209,8 +209,12 @@ const AdminDashboardView: React.FC = () => {
                   <tr key={b.id} className="hover:bg-background transition-colors">
                     <td className="py-3 font-mono font-bold text-secondary">{b.pnrCode}</td>
                     <td className="font-semibold text-primary truncate max-w-[150px]">{b.attractionName}</td>
-                    <td className="text-on-surface-variant">{b.slotDate.split('-').reverse().join('/')}</td>
-                    <td className="font-extrabold text-primary">${b.totalAmount.toFixed(2)}</td>
+                    <td className="text-on-surface-variant">
+                       {b.slotDate?.includes('-') ? b.slotDate.split('-').reverse().join('/') : (b.slotDate || 'Sin fecha')}
+                    </td>
+                    <td className="font-extrabold text-primary">
+                      ${(b.totalAmount ?? 0).toFixed(2)}
+                    </td>
                     <td className="text-right">
                       <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider ${getStatusClass(b.statusName)}`}>
                         {b.statusName}

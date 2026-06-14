@@ -143,8 +143,10 @@ const AdminPosTerminalView: React.FC = () => {
     const bookingRequest = {
       slotId: selectedSlot.id,
       attractionId: selectedAttractionId,
+      productOptionId: selectedOptionId,
       attractionName: activeAttraction?.name || '',
       productTitle: activeOption?.title || '',
+      currency: 'USD',
       totalAmount: grandTotal,
       notes: 'Venta rápida emitida por operador en Taquilla POS.',
       passengers: passengersList.map(p => ({
@@ -167,7 +169,7 @@ const AdminPosTerminalView: React.FC = () => {
               <p><strong>Operación:</strong> VENTA RÁPIDA POS</p>
               <p><strong>PNR Boleto:</strong> <span class="text-secondary font-black text-sm">${result.booking.pnrCode}</span></p>
               <p><strong>Atracción:</strong> ${activeAttraction?.name}</p>
-              <p><strong>Actividad:</strong> ${result.booking.slotDate.split('-').reverse().join('/')} | ${result.booking.slotStartTime} hs</p>
+              <p><strong>Actividad:</strong> ${result.booking.slotDate?.includes('-') ? result.booking.slotDate.split('-').reverse().join('/') : (result.booking.slotDate || 'Sin fecha')} | ${result.booking.slotStartTime || '--:--'} hs</p>
               <p><strong>Pasajeros:</strong> ${passengerCount}</p>
               <div class="h-px bg-surface-variant my-1"></div>
               <p class="font-bold text-success-green">Total Cobrado: $${grandTotal.toFixed(2)} (Efectivo/Tarjeta)</p>
