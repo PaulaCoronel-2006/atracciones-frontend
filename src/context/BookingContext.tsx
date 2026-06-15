@@ -96,28 +96,26 @@ const generateMockSlots = () => {
 
 export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [slots, setSlots] = useState<AttractionSlot[]>(() => {
-    const saved = localStorage.getItem('booking_slots');
-    return saved ? JSON.parse(saved) : generateMockSlots();
+    return generateMockSlots();
   });
 
-  const [bookings, setBookings] = useState<BookingResponse[]>(() => {
-    const saved = localStorage.getItem('booking_bookings');
-    return saved ? JSON.parse(saved) : [];
-  });
+  const [bookings, setBookings] = useState<BookingResponse[]>([]);
 
-  const [reviews] = useState<ReviewItem[]>(() => {
-    const saved = localStorage.getItem('booking_reviews');
-    return saved ? JSON.parse(saved) : [];
-  });
+  const [reviews] = useState<ReviewItem[]>([]);
+
+  React.useEffect(() => {
+    // Limpiar cache vieja corrupta e inconsistente para sanear el navegador del cliente
+    localStorage.removeItem('booking_bookings');
+    localStorage.removeItem('booking_slots');
+    localStorage.removeItem('booking_reviews');
+  }, []);
 
   const saveSlots = (newSlots: AttractionSlot[]) => {
     setSlots(newSlots);
-    localStorage.setItem('booking_slots', JSON.stringify(newSlots));
   };
 
   const saveBookings = (newBookings: BookingResponse[]) => {
     setBookings(newBookings);
-    localStorage.setItem('booking_bookings', JSON.stringify(newBookings));
   };
 
   const getAvailability = (optionId: string, startDate: string, endDate: string) => {
