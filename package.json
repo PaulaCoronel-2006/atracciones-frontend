@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@microsoft/signalr": "^10.0.0",
     "leaflet": "^1.9.4",
     "lucide-react": "^0.323.0",
     "react": "^18.2.0",

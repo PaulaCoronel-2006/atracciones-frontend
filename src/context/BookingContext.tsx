@@ -176,6 +176,97 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const fetchMisReservas = async (token: string) => {
     try {
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || '';
+      const graphqlUrl = baseUrl.endsWith('/') ? `${baseUrl}graphql` : `${baseUrl}/graphql`;
+
+      console.log('BookingContext: fetchMisReservas vía GraphQL de:', graphqlUrl);
+
+      const response = await fetch(graphqlUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          query: `
+            query GetBookingsWithDetails {
+              bookings {
+                id
+                pnrCode
+                userId
+                attractionId
+                slotId
+                statusId
+                totalAmount
+                currencyCode
+                createdAt
+                attraction {
+                  id
+                  nombre
+                  descripcion
+                  precio
+                  moneda
+                  ubicacion
+                  imagenUrl
+                }
+                invoice {
+                  id
+                  bookingId
+                  invoiceNumber
+                  customerName
+                  taxId
+                  total
+                  currency
+                  createdAt
+                }
+              }
+            }
+          `
+        })
+      });
+
+      const result = await response.json();
+      if (response.ok && result.data && Array.isArray(result.data.bookings)) {
+        const mapped = result.data.bookings.map((b: any) => {
+          let sDate = '';
+          let sTime = '';
+          if (b.createdAt) {
+            const parts = b.createdAt.split('T');
+            sDate = parts[0];
+            if (parts[1]) {
+              sTime = parts[1].substring(0, 5);
+            }
+          }
+
+          let statusName = 'Confirmed';
+          if (b.statusId === 3) statusName = 'Cancelled';
+          else if (b.statusId === 2) statusName = 'Pending';
+
+          const attractionName = b.attraction?.nombre || 'Atracción';
+          const invoiceInfo = b.invoice ? `Factura: ${b.invoice.invoiceNumber}` : 'Sin Factura';
+
+          return {
+            id: b.id,
+            pnrCode: b.pnrCode,
+            statusName: statusName,
+            totalAmount: b.totalAmount,
+            currencyCode: b.currencyCode || 'USD',
+            slotDate: sDate,
+            slotStartTime: sTime,
+            attractionName: attractionName,
+            notes: invoiceInfo,
+            passengers: []
+          };
+        });
+        saveBookings(mapped);
+        return { success: true };
+      }
+    } catch (graphqlError) {
+      console.warn('GraphQL de reservas falló. Intentando fallback mediante REST.', graphqlError);
+    }
+
+    // Fallback REST original
+    try {
       const baseUrl = import.meta.env.VITE_API_BASE_URL;
       const response = await fetch(`${baseUrl}/booking/booking/mis-reservas`, {
         method: 'GET',
@@ -212,7 +303,7 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
         return { success: true };
       }
     } catch (error) {
-      console.warn('Backend de reservas no disponible. Usando datos locales de respaldo.', error);
+      console.warn('Backend de reservas REST tampoco disponible. Usando datos locales de respaldo.', error);
     }
     return { success: false };
   };

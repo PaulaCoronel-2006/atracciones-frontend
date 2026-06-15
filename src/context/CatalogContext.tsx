@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { AttractionSummary, AttractionProductOption } from './CartContext';
+import { HubConnectionBuilder, HubConnection, HubConnectionState } from '@microsoft/signalr';
 
 const mapMockIdToDbGuid = (id: string | undefined): string => {
   if (!id) return '33333333-3333-3333-3333-333333333333'; // Default to Quito
@@ -200,6 +201,73 @@ export const CatalogProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const fetchAttractions = async () => {
     try {
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || '';
+      const graphqlUrl = baseUrl.endsWith('/') ? `${baseUrl}graphql` : `${baseUrl}/graphql`;
+
+      console.log('CatalogContext: fetchAttractions vía GraphQL de:', graphqlUrl);
+
+      const response = await fetch(graphqlUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          query: `
+            query GetAttractions {
+              attractions {
+                id
+                nombre
+                descripcion
+                precio
+                moneda
+                ubicacion
+                imagenUrl
+              }
+            }
+          `
+        })
+      });
+
+      const result = await response.json();
+      if (response.ok && result.data && Array.isArray(result.data.attractions)) {
+        const mapped = result.data.attractions.map((item: any) => {
+          const loc = locations.find(l => l.name.toLowerCase() === item.ubicacion?.toLowerCase());
+          const locationId = loc ? loc.id : '33333333-3333-3333-3333-333333333333';
+
+          const existing = attractions.find(a => a.id === item.id);
+
+          return {
+            id: item.id,
+            name: item.nombre,
+            slug: item.nombre.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, ''),
+            price_base: item.precio || 0.0,
+            rating: existing?.rating || 5.0,
+            review_count: existing?.review_count || 0,
+            media: [{ id: 'm-default', url: item.imagenUrl || 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=800', is_main: true }],
+            is_active: existing?.is_active ?? true,
+            is_published: existing?.is_published ?? true,
+            description: item.descripcion || '',
+            location_id: locationId,
+            subcategory_id: existing?.subcategory_id || 's3',
+            tags: existing?.tags || [],
+            inclusions: existing?.inclusions || [],
+            itinerary: existing?.itinerary || [],
+            product_options: existing?.product_options || [
+              {
+                id: 'po-' + item.id,
+                title: 'Entrada Estándar',
+                price_tiers: [{ label: 'Adulto', price: item.precio || 40.0 }]
+              }
+            ]
+          };
+        });
+        saveToStorage(mapped);
+        return { success: true };
+      }
+    } catch (graphqlError) {
+      console.warn('GraphQL de catálogo falló. Intentando fallback mediante REST.', graphqlError);
+    }
+
+    // Fallback REST original
+    try {
       const baseUrl = import.meta.env.VITE_API_BASE_URL;
       const response = await fetch(`${baseUrl}/catalog/attraction`, {
         method: 'GET',
@@ -214,7 +282,6 @@ export const CatalogProvider: React.FC<{ children: React.ReactNode }> = ({ child
           const subcat = subcategories.find(s => s.name.toLowerCase() === item.subcategoryName?.toLowerCase());
           const subcategoryId = subcat ? subcat.id : 's3';
 
-          // Buscar si ya tenemos un detalle más completo guardado localmente
           const existing = attractions.find(a => a.id === item.id);
 
           return {
@@ -246,7 +313,7 @@ export const CatalogProvider: React.FC<{ children: React.ReactNode }> = ({ child
         return { success: true };
       }
     } catch (error) {
-      console.warn('Backend de catálogo no disponible. Usando datos simulados de respaldo.', error);
+      console.warn('Backend de catálogo REST tampoco disponible. Usando datos simulados de respaldo.', error);
     }
     return { success: false };
   };
@@ -505,6 +572,85 @@ export const CatalogProvider: React.FC<{ children: React.ReactNode }> = ({ child
   };
 
   const publishedAttractions = attractions.filter(a => a.is_published && a.is_active);
+
+  const [connection, setConnection] = useState<HubConnection | null>(null);
+
+  useEffect(() => {
+    const baseUrl = import.meta.env.VITE_API_BASE_URL || '';
+    const hubUrl = baseUrl.endsWith('/') 
+      ? `${baseUrl}hub/notifications` 
+      : `${baseUrl}/hub/notifications`;
+
+    console.log('CatalogContext: Inicializando conexión SignalR a:', hubUrl);
+
+    const newConnection = new HubConnectionBuilder()
+      .withUrl(hubUrl)
+      .withAutomaticReconnect()
+      .build();
+
+    setConnection(newConnection);
+  }, []);
+
+  useEffect(() => {
+    if (!connection) return;
+
+    const startConnection = async () => {
+      try {
+        if (connection.state === HubConnectionState.Disconnected) {
+          await connection.start();
+          console.log('CatalogContext: Conectado exitosamente al Hub de SignalR');
+        }
+      } catch (err) {
+        console.error('CatalogContext: Error al conectar a SignalR Hub:', err);
+      }
+    };
+
+    startConnection();
+
+    // Escuchar eventos de actualización en tiempo real
+    connection.on('CatalogUpdated', (data: any) => {
+      console.log('SignalR: CatalogUpdated recibido', data);
+      fetchAttractions();
+    });
+
+    connection.on('SlotUpdated', (data: any) => {
+      console.log('SignalR: SlotUpdated recibido', data);
+      // Actualizar attractions locales si viene el ID de atracción
+      if (data && data.attractionId) {
+        setAttractions(prev => prev.map(attr => {
+          if (attr.id === data.attractionId) {
+            return {
+              ...attr,
+              // Forzar actualización incrementando review_count o cambiando algo visual
+              // o simplemente dejamos que fetchAttractions actualice
+            };
+          }
+          return attr;
+        }));
+      }
+      fetchAttractions();
+    });
+
+    connection.on('CapacityChanged', (data: any) => {
+      console.log('SignalR: CapacityChanged recibido', data);
+      fetchAttractions();
+    });
+
+    connection.on('LocationUpdated', (data: any) => {
+      console.log('SignalR: LocationUpdated recibido', data);
+      fetchAttractions();
+    });
+
+    return () => {
+      connection.off('CatalogUpdated');
+      connection.off('SlotUpdated');
+      connection.off('CapacityChanged');
+      connection.off('LocationUpdated');
+      if (connection.state === HubConnectionState.Connected) {
+        connection.stop();
+      }
+    };
+  }, [connection]);
 
   useEffect(() => {
     fetchAttractions();
