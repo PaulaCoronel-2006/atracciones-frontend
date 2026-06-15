@@ -4,13 +4,19 @@ import { AttractionSummary, AttractionProductOption } from './CartContext';
 const mapMockIdToDbGuid = (id: string | undefined): string => {
   if (!id) return '33333333-3333-3333-3333-333333333333'; // Default to Quito
   const cleanId = id.trim().toLowerCase();
+
+  // If it's already a valid Guid, return it
+  const guidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  if (guidRegex.test(cleanId)) {
+    return cleanId;
+  }
   
-  // Mapping Locations
+  // Mapping Locations (just in case legacy IDs are still used somewhere)
   if (cleanId === 'l1') return '11111111-1111-1111-1111-111111111111'; // Ecuador
   if (cleanId === 'l2') return '22222222-2222-2222-2222-222222222222'; // Pichincha
   if (cleanId === 'l3') return '33333333-3333-3333-3333-333333333333'; // Quito
-  if (cleanId === 'l4' || cleanId === 'l5') return '33333333-3333-3333-3333-333333333333'; // Galapagos/Santa Cruz mapped to Quito
-  if (cleanId === 'l6' || cleanId === 'l7') return '33333333-3333-3333-3333-333333333333'; // Azuay/Cuenca mapped to Quito
+  if (cleanId === 'l4' || cleanId === 'l5') return '33333333-3333-3333-3333-333333333333';
+  if (cleanId === 'l6' || cleanId === 'l7') return '33333333-3333-3333-3333-333333333333';
 
   // Mapping Subcategories
   if (cleanId === 's1' || cleanId === 'd1d1d1d1-d1d1-d1d1-d1d1-d1d1d1d1d1d1') return 'd1d1d1d1-d1d1-d1d1-d1d1-d1d1d1d1d1d1'; // Senderismo & Trekking
@@ -18,12 +24,6 @@ const mapMockIdToDbGuid = (id: string | undefined): string => {
   if (cleanId === 's3' || cleanId === 'd4d4d4d4-d4d4-d4d4-d4d4-d4d4d4d4d4d4') return 'd3d3d3d3-d3d3-d3d3-d3d3-d3d3d3d3d3d3'; // Tours de la Ciudad
   if (cleanId === 's4' || cleanId === 'd4d4d4d4-d4d4-d4d4-d4d4-d4d4d4d4d4d4') return 'd4d4d4d4-d4d4-d4d4-d4d4-d4d4d4d4d4d4'; // Museos & Monumentos
   if (cleanId === 's5' || cleanId === 'd5d5d5d5-d5d5-d5d5-d5d5-d5d5d5d5d5d5') return 'd5d5d5d5-d5d5-d5d5-d5d5-d5d5d5d5d5d5'; // Degustaciones de Comida
-
-  // If it's already a valid Guid, return it
-  const guidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-  if (guidRegex.test(cleanId)) {
-    return cleanId;
-  }
 
   return '33333333-3333-3333-3333-333333333333'; // Default to Quito
 };
@@ -101,13 +101,55 @@ const CatalogContext = createContext<CatalogContextType | undefined>(undefined);
 
 export const CatalogProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [locations] = useState<LocationItem[]>([
-    { id: 'l1', name: 'Ecuador', type: 'Country', parentId: null },
-    { id: 'l2', name: 'Pichincha', type: 'State', parentId: 'l1' },
-    { id: 'l3', name: 'Quito', type: 'City', parentId: 'l2' },
-    { id: 'l4', name: 'Galápagos', type: 'State', parentId: 'l1' },
-    { id: 'l5', name: 'Santa Cruz', type: 'City', parentId: 'l4' },
-    { id: 'l6', name: 'Azuay', type: 'State', parentId: 'l1' },
-    { id: 'l7', name: 'Cuenca', type: 'City', parentId: 'l6' }
+    { id: '11111111-1111-1111-1111-111111111111', name: 'Ecuador', type: 'Country', parentId: null },
+    { id: 'a27b94f1-11f3-4235-a287-4b92b547a9fc', name: 'Azuay', type: 'State', parentId: '11111111-1111-1111-1111-111111111111' },
+    { id: '3999c4d8-149b-4325-adad-7aba5a57560f', name: 'Cuenca', type: 'City', parentId: 'a27b94f1-11f3-4235-a287-4b92b547a9fc' },
+    { id: '09d57d09-a9b8-4026-a1f0-3e120b229744', name: 'Bolívar', type: 'State', parentId: '11111111-1111-1111-1111-111111111111' },
+    { id: 'd8db0fbc-098a-403f-a203-bfa8ac3c074d', name: 'Guaranda', type: 'City', parentId: '09d57d09-a9b8-4026-a1f0-3e120b229744' },
+    { id: 'b6dd93f0-233a-41a8-a53d-bd6e99ca6ced', name: 'Cañar', type: 'State', parentId: '11111111-1111-1111-1111-111111111111' },
+    { id: 'c978c3a1-0a87-47cb-aa3b-f80d428d5523', name: 'Azogues', type: 'City', parentId: 'b6dd93f0-233a-41a8-a53d-bd6e99ca6ced' },
+    { id: 'e120df3f-fd63-4a0d-a0b0-ece808faccd2', name: 'Carchi', type: 'State', parentId: '11111111-1111-1111-1111-111111111111' },
+    { id: 'c8bdff63-f5bc-4544-a33c-dbde955aa91a', name: 'Tulcán', type: 'City', parentId: 'e120df3f-fd63-4a0d-a0b0-ece808faccd2' },
+    { id: '52b4b598-5d5f-4d4b-a04c-e411a6a1ae12', name: 'Chimborazo', type: 'State', parentId: '11111111-1111-1111-1111-111111111111' },
+    { id: 'f64e80dc-4078-4d3f-ab68-966cc0aeb6ab', name: 'Riobamba', type: 'City', parentId: '52b4b598-5d5f-4d4b-a04c-e411a6a1ae12' },
+    { id: 'a1362e4c-4666-414b-a597-ae86457f5579', name: 'Cotopaxi', type: 'State', parentId: '11111111-1111-1111-1111-111111111111' },
+    { id: '0a2c3ee7-f83e-42a5-a670-1f5351d211b1', name: 'Latacunga', type: 'City', parentId: 'a1362e4c-4666-414b-a597-ae86457f5579' },
+    { id: 'ddeb08a8-2308-4091-a8b4-9a1e4630a69b', name: 'El Oro', type: 'State', parentId: '11111111-1111-1111-1111-111111111111' },
+    { id: '0f8780d0-3242-40d0-ab99-7288fee16226', name: 'Machala', type: 'City', parentId: 'ddeb08a8-2308-4091-a8b4-9a1e4630a69b' },
+    { id: 'd6959391-0931-438c-a0ed-2d015223d2b3', name: 'Esmeraldas', type: 'State', parentId: '11111111-1111-1111-1111-111111111111' },
+    { id: 'b3eeaafc-cca7-4ee7-a9ae-c80ff09634dd', name: 'Esmeraldas', type: 'City', parentId: 'd6959391-0931-438c-a0ed-2d015223d2b3' },
+    { id: '591620e9-2ced-44c1-a358-fdafd4efb4f6', name: 'Galápagos', type: 'State', parentId: '11111111-1111-1111-1111-111111111111' },
+    { id: '873d55dd-9450-4bcc-ab88-b577e6ef5c69', name: 'Santa Cruz', type: 'City', parentId: '591620e9-2ced-44c1-a358-fdafd4efb4f6' },
+    { id: 'bb498111-63cb-4568-a1de-711847963cac', name: 'Guayas', type: 'State', parentId: '11111111-1111-1111-1111-111111111111' },
+    { id: 'c7ae4f4e-6f1a-476e-acdf-9cc804c7c732', name: 'Guayaquil', type: 'City', parentId: 'bb498111-63cb-4568-a1de-711847963cac' },
+    { id: '492abe4e-88bc-4e3b-a643-3b40e6570660', name: 'Imbabura', type: 'State', parentId: '11111111-1111-1111-1111-111111111111' },
+    { id: '10b7cfad-715d-406e-a06b-9775f9a3007a', name: 'Ibarra', type: 'City', parentId: '492abe4e-88bc-4e3b-a643-3b40e6570660' },
+    { id: 'b951008c-7308-4b39-a6a1-d6f0603b96ab', name: 'Loja', type: 'State', parentId: '11111111-1111-1111-1111-111111111111' },
+    { id: '56756c11-2b85-4a03-a579-1aa9d02e47e3', name: 'Loja', type: 'City', parentId: 'b951008c-7308-4b39-a6a1-d6f0603b96ab' },
+    { id: '9e539471-b567-41ec-a554-88c457dd94e2', name: 'Los Ríos', type: 'State', parentId: '11111111-1111-1111-1111-111111111111' },
+    { id: 'f50e8f62-ba6f-4464-adf8-ef3e6169f6b6', name: 'Babahoyo', type: 'City', parentId: '9e539471-b567-41ec-a554-88c457dd94e2' },
+    { id: 'b9d265c0-2869-4214-a5d8-69ea8e86ba07', name: 'Manabí', type: 'State', parentId: '11111111-1111-1111-1111-111111111111' },
+    { id: 'c3f2b096-1314-444e-a91e-29f6e817419a', name: 'Portoviejo', type: 'City', parentId: 'b9d265c0-2869-4214-a5d8-69ea8e86ba07' },
+    { id: 'bae6f5ae-4970-46ac-a5cf-87f788f3cd30', name: 'Morona Santiago', type: 'State', parentId: '11111111-1111-1111-1111-111111111111' },
+    { id: '0e08e35a-e86a-40c3-abb3-54dcac77a80d', name: 'Macas', type: 'City', parentId: 'bae6f5ae-4970-46ac-a5cf-87f788f3cd30' },
+    { id: '2416c43c-7390-4bb6-af00-20253ed030ce', name: 'Napo', type: 'State', parentId: '11111111-1111-1111-1111-111111111111' },
+    { id: 'c1824b72-32d6-4f03-a63e-45e491843f81', name: 'Tena', type: 'City', parentId: '2416c43c-7390-4bb6-af00-20253ed030ce' },
+    { id: '514c5b47-faf7-4d29-a77f-774d3778152f', name: 'Orellana', type: 'State', parentId: '11111111-1111-1111-1111-111111111111' },
+    { id: 'b0fa319c-cefe-425a-ac2d-370daa7a06da', name: 'El Coca', type: 'City', parentId: '514c5b47-faf7-4d29-a77f-774d3778152f' },
+    { id: '81533417-4b84-4142-aaa4-5912427761ba', name: 'Pastaza', type: 'State', parentId: '11111111-1111-1111-1111-111111111111' },
+    { id: 'f386daea-b280-438a-a076-9dbd7a75b775', name: 'Puyo', type: 'City', parentId: '81533417-4b84-4142-aaa4-5912427761ba' },
+    { id: '22222222-2222-2222-2222-222222222222', name: 'Pichincha', type: 'State', parentId: '11111111-1111-1111-1111-111111111111' },
+    { id: '33333333-3333-3333-3333-333333333333', name: 'Quito', type: 'City', parentId: '22222222-2222-2222-2222-222222222222' },
+    { id: 'b5ee7cda-800f-4072-afed-70f58ad59c98', name: 'Santa Elena', type: 'State', parentId: '11111111-1111-1111-1111-111111111111' },
+    { id: '1f683858-aa19-4928-adaf-42ab9a205568', name: 'Santa Elena', type: 'City', parentId: 'b5ee7cda-800f-4072-afed-70f58ad59c98' },
+    { id: 'eefd334f-7fb7-4b57-a045-e279f02acd26', name: 'Santo Domingo de los Tsáchilas', type: 'State', parentId: '11111111-1111-1111-1111-111111111111' },
+    { id: '6941c0d0-0daf-498f-a4b0-f1fe6492c9d2', name: 'Santo Domingo', type: 'City', parentId: 'eefd334f-7fb7-4b57-a045-e279f02acd26' },
+    { id: '82a4eac5-0cf8-4c0e-a32a-2618d36a58c8', name: 'Sucumbíos', type: 'State', parentId: '11111111-1111-1111-1111-111111111111' },
+    { id: 'df1e1e3d-bef8-4f3d-ae57-fdd4cd1234dd', name: 'Lago Agrio', type: 'City', parentId: '82a4eac5-0cf8-4c0e-a32a-2618d36a58c8' },
+    { id: '84e7eed4-9880-4278-ad65-2e3a7ee64ec7', name: 'Tungurahua', type: 'State', parentId: '11111111-1111-1111-1111-111111111111' },
+    { id: 'be375bb5-ad93-47ba-ae0b-d144c1db3e1a', name: 'Ambato', type: 'City', parentId: '84e7eed4-9880-4278-ad65-2e3a7ee64ec7' },
+    { id: '738868b7-a1a4-4df4-ae5a-75ac0c20928f', name: 'Zamora Chinchipe', type: 'State', parentId: '11111111-1111-1111-1111-111111111111' },
+    { id: '682b18b8-9366-4dea-a596-f8fc7809d938', name: 'Zamora', type: 'City', parentId: '738868b7-a1a4-4df4-ae5a-75ac0c20928f' }
   ]);
 
   const [categories] = useState<CategoryItem[]>([
@@ -167,7 +209,7 @@ export const CatalogProvider: React.FC<{ children: React.ReactNode }> = ({ child
       if (response.ok && result.success) {
         const mapped = result.data.items.map((item: any) => {
           const loc = locations.find(l => l.name.toLowerCase() === item.locationName?.toLowerCase());
-          const locationId = loc ? loc.id : 'l3';
+          const locationId = loc ? loc.id : '33333333-3333-3333-3333-333333333333';
 
           const subcat = subcategories.find(s => s.name.toLowerCase() === item.subcategoryName?.toLowerCase());
           const subcategoryId = subcat ? subcat.id : 's3';
@@ -221,7 +263,7 @@ export const CatalogProvider: React.FC<{ children: React.ReactNode }> = ({ child
         const detail = result.data;
         
         const loc = locations.find(l => l.name.toLowerCase() === detail.locationName?.toLowerCase());
-        const locationId = loc ? loc.id : 'l3';
+        const locationId = loc ? loc.id : '33333333-3333-3333-3333-333333333333';
 
         const subcat = subcategories.find(s => s.name.toLowerCase() === detail.subcategoryName?.toLowerCase());
         const subcategoryId = subcat ? subcat.id : 's3';
@@ -321,7 +363,7 @@ export const CatalogProvider: React.FC<{ children: React.ReactNode }> = ({ child
         review_count: 0,
         price_base: attractionData.product_options?.[0]?.price_tiers?.[0]?.price || 40.00,
         description: attractionData.description || '',
-        location_id: attractionData.location_id || 'l3',
+        location_id: attractionData.location_id || '33333333-3333-3333-3333-333333333333',
         subcategory_id: attractionData.subcategory_id || 's3',
         tags: attractionData.tags || [],
         inclusions: attractionData.inclusions || [],
