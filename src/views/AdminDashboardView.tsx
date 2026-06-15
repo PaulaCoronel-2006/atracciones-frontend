@@ -240,11 +240,11 @@ const AdminDashboardView: React.FC = () => {
             </button>
           </h3>
 
-          <div className="flex flex-col gap-3">
-            {attractions.slice(0, 5).map(a => (
+          <div className="flex flex-col gap-3 max-h-[380px] overflow-y-auto pr-1">
+            {attractions.map(a => (
               <div 
                 key={a.id}
-                className="p-3 rounded-xl bg-background border border-surface-variant flex items-center justify-between hover:border-outline transition-all text-xs"
+                className="p-3 rounded-xl bg-background border border-surface-variant flex items-center justify-between hover:border-outline transition-all text-xs mr-0.5"
               >
                 <div className="flex flex-col text-left gap-0.5">
                   <span className="font-bold text-primary truncate w-32 md:w-40">{a.name}</span>

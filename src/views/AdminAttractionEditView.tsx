@@ -73,6 +73,7 @@ const AdminAttractionEditView: React.FC = () => {
   const isEditing = !!id;
   const [currentStep, setCurrentStep] = useState<number>(1);
   const [isSaved, setIsSaved] = useState<boolean>(false);
+  const hasCheckedDraft = React.useRef(false);
 
   // Estados de Ubicación Jerárquica
   const [selectedCountryId, setSelectedCountryId] = useState('');
@@ -135,21 +136,11 @@ const AdminAttractionEditView: React.FC = () => {
         navigate('/admin');
       }
     } else {
-      // Cargar borrador local si existe
+      if (hasCheckedDraft.current) return;
+      hasCheckedDraft.current = true;
+
       const savedDraft = localStorage.getItem('hospedate_attraction_draft');
-      if (savedDraft) {
-        try {
-          const parsed = JSON.parse(savedDraft);
-          setForm(parsed.form);
-          setSelectedCountryId(parsed.country || '');
-          setSelectedStateId(parsed.state || '');
-          setSelectedCityId(parsed.city || '');
-          setCurrentStep(parsed.step || 1);
-        } catch (e) {
-          // Ignore
-        }
-      } else {
-        // Creación limpia: resetear todos los campos
+      const resetToCleanForm = () => {
         setForm({
           ...initialFormState,
           subcategory_id: subcategories[0]?.id || ''
@@ -161,6 +152,37 @@ const AdminAttractionEditView: React.FC = () => {
         setSelectedStateId('');
         setSelectedCityId('');
         setCurrentStep(1);
+      };
+
+      if (savedDraft) {
+        Swal.fire({
+          title: '¿Continuar con el borrador anterior?',
+          text: 'Hemos detectado un borrador de atracción sin guardar. ¿Deseas recuperarlo?',
+          icon: 'question',
+          showCancelButton: true,
+          confirmButtonColor: '#0058bc',
+          cancelButtonColor: '#747782',
+          confirmButtonText: 'Sí, recuperar',
+          cancelButtonText: 'No, empezar de cero'
+        }).then((result) => {
+          if (result.isConfirmed) {
+            try {
+              const parsed = JSON.parse(savedDraft);
+              setForm(parsed.form);
+              setSelectedCountryId(parsed.country || '');
+              setSelectedStateId(parsed.state || '');
+              setSelectedCityId(parsed.city || '');
+              setCurrentStep(parsed.step || 1);
+            } catch (e) {
+              resetToCleanForm();
+            }
+          } else {
+            localStorage.removeItem('hospedate_attraction_draft');
+            resetToCleanForm();
+          }
+        });
+      } else {
+        resetToCleanForm();
       }
     }
   }, [id, isEditing, attractions, locations, subcategories, navigate]);
