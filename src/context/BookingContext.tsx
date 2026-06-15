@@ -353,6 +353,7 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
       const idempotencyKey = crypto.randomUUID();
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
+        'X-Idempotency-Key': idempotencyKey,
         'Idempotency-Key': idempotencyKey
       };
       if (token) {
