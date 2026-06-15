@@ -1,12 +1,20 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useBooking } from '../context/BookingContext';
 import { useCatalog } from '../context/CatalogContext';
+import { useAuth } from '../context/AuthContext';
 
 const AdminDashboardView: React.FC = () => {
   const navigate = useNavigate();
-  const { bookings, slots } = useBooking();
+  const { bookings, slots, fetchManagementBookings } = useBooking();
   const { attractions, getSubcategoryById } = useCatalog();
+  const { token } = useAuth();
+
+  useEffect(() => {
+    if (token) {
+      fetchManagementBookings(token);
+    }
+  }, [token, fetchManagementBookings]);
 
   // Ingresos Netos
   const totalSales = useMemo(() => {
