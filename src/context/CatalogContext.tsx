@@ -392,7 +392,7 @@ export const CatalogProvider: React.FC<{ children: React.ReactNode }> = ({ child
     return getAttractionBySlug(slug);
   };
 
-  const fetchCompleteAttraction = async (id: string, token: string) => {
+  const fetchCompleteAttraction = React.useCallback(async (id: string, token: string) => {
     try {
       const baseUrl = import.meta.env.VITE_API_BASE_URL;
       const response = await fetch(`${baseUrl}/catalog/attraction/${id}/complete`, {
@@ -408,10 +408,10 @@ export const CatalogProvider: React.FC<{ children: React.ReactNode }> = ({ child
         
         const loc = locations.find(l => l.name.toLowerCase() === detail.locationName?.toLowerCase());
         const locationId = loc ? loc.id : detail.locationId || '33333333-3333-3333-3333-333333333333';
-
+ 
         const subcat = subcategories.find(s => s.name.toLowerCase() === detail.subcategoryName?.toLowerCase());
         const subcategoryId = subcat ? subcat.id : detail.subcategoryId || 's3';
-
+ 
         const item: AttractionDetail = {
           id: detail.id,
           name: detail.name,
@@ -453,7 +453,7 @@ export const CatalogProvider: React.FC<{ children: React.ReactNode }> = ({ child
           is_active: detail.isActive ?? true,
           is_published: detail.isPublished ?? true
         };
-
+ 
         setAttractions(prev => {
           if (prev.some(a => a.id === id)) {
             return prev.map(a => a.id === id ? item : a);
@@ -461,14 +461,14 @@ export const CatalogProvider: React.FC<{ children: React.ReactNode }> = ({ child
             return [...prev, item];
           }
         });
-
+ 
         return item;
       }
     } catch (error) {
       console.error('Error fetching complete attraction:', error);
     }
     return undefined;
-  };
+  }, [locations, subcategories]);
 
   const buildCompletePayload = (attractionData: Partial<AttractionDetail>) => {
     const parseDuration = (dur: string | undefined): number => {

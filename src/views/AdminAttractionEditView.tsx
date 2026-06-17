@@ -75,6 +75,7 @@ const AdminAttractionEditView: React.FC = () => {
   const [isSaved, setIsSaved] = useState<boolean>(false);
   const [isLoadingDetail, setIsLoadingDetail] = useState<boolean>(false);
   const hasCheckedDraft = React.useRef(false);
+  const hasFetchedCompleteRef = React.useRef<string | null>(null);
 
   // Estados de Ubicación Jerárquica
   const [selectedCountryId, setSelectedCountryId] = useState('');
@@ -110,6 +111,8 @@ const AdminAttractionEditView: React.FC = () => {
   // Cargar datos al editar o creación limpia
   useEffect(() => {
     if (isEditing && id && token) {
+      if (hasFetchedCompleteRef.current === id) return;
+      hasFetchedCompleteRef.current = id;
       setIsLoadingDetail(true);
       fetchCompleteAttraction(id, token).then(attraction => {
         setIsLoadingDetail(false);
@@ -130,6 +133,8 @@ const AdminAttractionEditView: React.FC = () => {
             }
           }
         } else {
+          // Limpiar la referencia para permitir reintentos al navegar de vuelta o recargar
+          hasFetchedCompleteRef.current = null;
           Swal.fire({
             title: 'Atracción no encontrada',
             text: 'La atracción especificada no existe en el sistema o no se pudo cargar su información detallada.',
@@ -140,9 +145,11 @@ const AdminAttractionEditView: React.FC = () => {
         }
       }).catch(err => {
         setIsLoadingDetail(false);
+        hasFetchedCompleteRef.current = null;
         console.error('Error al cargar la atracción completa:', err);
       });
     } else if (!isEditing) {
+      hasFetchedCompleteRef.current = null;
       if (hasCheckedDraft.current) return;
       hasCheckedDraft.current = true;
 
@@ -192,7 +199,7 @@ const AdminAttractionEditView: React.FC = () => {
         resetToCleanForm();
       }
     }
-  }, [id, isEditing, token, locations, subcategories, navigate, fetchCompleteAttraction]);
+  }, [id, isEditing, token, navigate]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Autoguardado dinámico de borrador local
   useEffect(() => {
