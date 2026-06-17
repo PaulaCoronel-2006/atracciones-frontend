@@ -7,7 +7,7 @@ const mapMockIdToDbGuid = (id: string | undefined): string => {
   const cleanId = id.trim().toLowerCase();
 
   // If it's already a valid Guid, return it
-  const guidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  const guidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   if (guidRegex.test(cleanId)) {
     return cleanId;
   }
