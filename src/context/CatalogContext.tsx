@@ -220,6 +220,7 @@ export const CatalogProvider: React.FC<{ children: React.ReactNode }> = ({ child
                 moneda
                 ubicacion
                 imagenUrl
+                slug
               }
             }
           `
@@ -237,7 +238,7 @@ export const CatalogProvider: React.FC<{ children: React.ReactNode }> = ({ child
           return {
             id: item.id,
             name: item.nombre,
-            slug: item.nombre.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, ''),
+            slug: item.slug || item.nombre.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, ''),
             price_base: item.precio || 0.0,
             rating: existing?.rating || 5.0,
             review_count: existing?.review_count || 0,
