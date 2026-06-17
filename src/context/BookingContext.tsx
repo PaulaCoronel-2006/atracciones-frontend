@@ -200,6 +200,8 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
                 totalAmount
                 currencyCode
                 createdAt
+                slotDate
+                slotStartTime
                 attraction {
                   id
                   nombre
@@ -228,19 +230,14 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
       const result = await response.json();
       if (response.ok && result.data && Array.isArray(result.data.bookings)) {
         const mapped = result.data.bookings.map((b: any) => {
-          let sDate = '';
-          let sTime = '';
-          if (b.createdAt) {
-            const parts = b.createdAt.split('T');
-            sDate = parts[0];
-            if (parts[1]) {
-              sTime = parts[1].substring(0, 5);
-            }
-          }
+          let sDate = b.slotDate || '';
+          let sTime = b.slotStartTime ? b.slotStartTime.substring(0, 5) : '';
 
           let statusName = 'Confirmed';
-          if (b.statusId === 3) statusName = 'Cancelled';
-          else if (b.statusId === 2) statusName = 'Pending';
+          if (b.statusId === 1) statusName = 'Pending';
+          else if (b.statusId === 2) statusName = 'Confirmed';
+          else if (b.statusId === 3) statusName = 'Cancelled';
+          else if (b.statusId === 4) statusName = 'Completed';
 
           const attractionName = b.attraction?.nombre || 'Atracción';
           const invoiceInfo = b.invoice ? `Factura: ${b.invoice.invoiceNumber}` : 'Sin Factura';
