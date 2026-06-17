@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import Swal from 'sweetalert2';
 
 const AdminBookingListView: React.FC = () => {
-  const { bookings, cancelBooking, fetchManagementBookings } = useBooking();
+  const { bookings, cancelBooking, fetchManagementBookings, fetchBookingDetail } = useBooking();
   const { token } = useAuth();
 
   useEffect(() => {
@@ -19,6 +19,9 @@ const AdminBookingListView: React.FC = () => {
   const [expandedBookingId, setExpandedBookingId] = useState('');
 
   const toggleExpand = (id: string) => {
+    if (expandedBookingId !== id && token) {
+      fetchBookingDetail(id, token);
+    }
     setExpandedBookingId(prev => prev === id ? '' : id);
   };
 
@@ -195,7 +198,9 @@ const AdminBookingListView: React.FC = () => {
                         </span>
                         <span className="font-bold text-primary truncate w-40 md:w-56">{booking.attractionName}</span>
                       </div>
-                      <span className="text-[10px] text-outline font-semibold">Reserva Digital HospédateEC</span>
+                      <span className="text-[10px] text-outline font-semibold">
+                        Reserva Digital HospédateEC • Adquirente: <span className="text-secondary font-bold">{booking.clientName || 'Cliente'}</span>
+                      </span>
                     </div>
                   </div>
 

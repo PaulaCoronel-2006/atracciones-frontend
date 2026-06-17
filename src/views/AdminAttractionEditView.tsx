@@ -599,7 +599,7 @@ const AdminAttractionEditView: React.FC = () => {
     );
   };
 
-  const handleGenerateSlots = (e: React.FormEvent) => {
+  const handleGenerateSlots = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!activeOptionId) {
       Swal.fire({
@@ -641,7 +641,7 @@ const AdminAttractionEditView: React.FC = () => {
       return;
     }
 
-    const created = generateScheduleMassive(activeOptionId, {
+    const created = await generateScheduleMassive(activeOptionId, {
       startDate: genStartDate,
       endDate: genEndDate,
       startTime: genStartTime,
@@ -684,9 +684,9 @@ const AdminAttractionEditView: React.FC = () => {
       cancelButtonColor: '#747782',
       confirmButtonText: 'Sí, depurar slots',
       cancelButtonText: 'Cancelar'
-    }).then((result) => {
+    }).then(async (result) => {
       if (result.isConfirmed) {
-        const deleted = bulkDeleteSlots(activeOptionId, delStartDate, delEndDate);
+        const deleted = await bulkDeleteSlots(activeOptionId, delStartDate, delEndDate);
         Swal.fire({
           title: 'Slots Depurados',
           text: `Se eliminaron ${deleted} slots de disponibilidad libres de reservas.`,

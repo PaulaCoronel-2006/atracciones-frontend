@@ -38,6 +38,7 @@ export interface BookingResponse {
   attractionName: string;
   notes?: string;
   userId?: string;
+  clientName?: string;
   passengers?: any[];
 }
 
@@ -58,10 +59,11 @@ interface BookingContextType {
   fetchSlots: (optionId: string) => Promise<{ success: boolean }>;
   fetchMisReservas: (token: string) => Promise<{ success: boolean }>;
   fetchManagementBookings: (token: string) => Promise<{ success: boolean }>;
+  fetchBookingDetail: (bookingId: string, token: string) => Promise<BookingResponse | null>;
   createBooking: (userId: string | undefined, bookingRequest: BookingRequest, token: string | null) => Promise<{ success: boolean; message?: string; booking?: BookingResponse }>;
   cancelBooking: (bookingId: string, cancelReason: string, token: string) => Promise<{ success: boolean; message?: string }>;
-  generateScheduleMassive: (optionId: string, data: { startDate: string; endDate: string; startTime: string; endTime: string; capacity: number; daysOfWeek: number[] }) => number;
-  bulkDeleteSlots: (optionId: string, startDate: string, endDate: string) => number;
+  generateScheduleMassive: (optionId: string, data: { startDate: string; endDate: string; startTime: string; endTime: string; capacity: number; daysOfWeek: number[] }) => Promise<number>;
+  bulkDeleteSlots: (optionId: string, startDate: string, endDate: string) => Promise<number>;
 }
 
 const BookingContext = createContext<BookingContextType | undefined>(undefined);
@@ -327,6 +329,7 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
           slotDate: b.slotDate,
           slotStartTime: b.slotStartTime,
           attractionName: b.attractionName,
+          clientName: b.clientName || 'Cliente',
           passengers: b.tickets?.map((t: any) => ({
             fullName: b.clientName || 'Pasajero',
             documentNumber: '-',
@@ -342,6 +345,53 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
       console.warn('Error al obtener las reservas de administración del backend.', error);
     }
     return { success: false };
+  };
+
+  const fetchBookingDetail = async (bookingId: string, token: string): Promise<BookingResponse | null> => {
+    try {
+      const baseUrl = import.meta.env.VITE_API_BASE_URL;
+      const response = await fetch(`${baseUrl}/booking/admin-booking/detail/${bookingId}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      const result = await response.json();
+      if (response.ok && result.success && result.data) {
+        const b = result.data;
+        let sDate = b.slotDate || '';
+        let sTime = b.slotStartTime || '';
+        
+        const mappedPassengers = b.tickets?.map((t: any) => ({
+          fullName: `${t.firstName} ${t.lastName}`.trim() || 'Pasajero',
+          documentNumber: t.documentNumber || '-',
+          priceTierLabel: t.categoryName || 'Ticket',
+          unitPrice: t.unitPrice
+        })) || [];
+
+        const detailedBooking: BookingResponse = {
+          id: b.id,
+          pnrCode: b.pnrCode,
+          statusName: b.statusName,
+          totalAmount: b.totalAmount,
+          currencyCode: b.currencyCode || 'USD',
+          slotDate: sDate,
+          slotStartTime: sTime,
+          attractionName: b.attractionName,
+          clientName: b.clientName || 'Cliente',
+          passengers: mappedPassengers,
+          notes: b.notes || '',
+          userId: b.userId
+        };
+
+        setBookings(prev => prev.map(item => item.id === bookingId ? detailedBooking : item));
+        return detailedBooking;
+      }
+    } catch (error) {
+      console.warn(`Error al obtener detalle de la reserva ${bookingId}:`, error);
+    }
+    return null;
   };
 
   const createBooking = async (userId: string | undefined, bookingRequest: BookingRequest, token: string | null) => {
@@ -491,60 +541,59 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
     return { success: false, message: 'No se pudo cancelar la reserva' };
   };
 
-  const generateScheduleMassive = (
+  const generateScheduleMassive = async (
     optionId: string,
     data: { startDate: string; endDate: string; startTime: string; endTime: string; capacity: number; daysOfWeek: number[] }
-  ): number => {
-    const start = new Date(data.startDate + 'T00:00:00');
-    const end = new Date(data.endDate + 'T00:00:00');
-    let count = 0;
-    const newSlotsList = [...slots];
-
-    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-      const dayOfWeek = d.getDay(); // Domingo = 0, Lunes = 1...
-      if (data.daysOfWeek.includes(dayOfWeek)) {
-        const dateStr = d.toISOString().split('T')[0];
-        
-        // Evitar duplicados
-        const exists = slots.some(s => s.productId === optionId && s.slotDate === dateStr && s.startTime === data.startTime);
-        if (!exists) {
-          newSlotsList.push({
-            id: `slot-${optionId}-${dateStr}-${data.startTime.replace(':', '')}`,
-            productId: optionId,
-            slotDate: dateStr,
-            startTime: data.startTime,
-            endTime: data.endTime,
-            capacityTotal: data.capacity,
-            capacityAvailable: data.capacity,
-            isActive: true
-          });
-          count++;
-        }
+  ): Promise<number> => {
+    try {
+      const baseUrl = import.meta.env.VITE_API_BASE_URL;
+      const response = await fetch(`${baseUrl}/booking/booking/slots/generate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          productId: optionId,
+          startDate: data.startDate,
+          endDate: data.endDate,
+          startTime: data.startTime,
+          endTime: data.endTime,
+          capacity: data.capacity,
+          daysOfWeek: data.daysOfWeek
+        })
+      });
+      const result = await response.json();
+      if (response.ok && result.success) {
+        const count = result.data || 0;
+        await fetchSlots(optionId);
+        return count;
       }
+    } catch (error) {
+      console.warn('Error al generar slots masivamente en el backend:', error);
     }
-
-    if (count > 0) {
-      saveSlots(newSlotsList);
-    }
-    return count;
+    return 0;
   };
 
-  const bulkDeleteSlots = (optionId: string, startDate: string, endDate: string): number => {
-    let count = 0;
-    const filtered = slots.filter(s => {
-      const inRange = s.productId === optionId && s.slotDate >= startDate && s.slotDate <= endDate;
-      const isUnused = s.capacityAvailable === s.capacityTotal;
-      if (inRange && isUnused) {
-        count++;
-        return false; // Eliminar
+  const bulkDeleteSlots = async (optionId: string, startDate: string, endDate: string): Promise<number> => {
+    try {
+      const baseUrl = import.meta.env.VITE_API_BASE_URL;
+      const response = await fetch(`${baseUrl}/booking/booking/slots/bulk-delete`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          productId: optionId,
+          startDate,
+          endDate
+        })
+      });
+      const result = await response.json();
+      if (response.ok && result.success) {
+        const count = result.data || 0;
+        await fetchSlots(optionId);
+        return count;
       }
-      return true; // Mantener
-    });
-
-    if (count > 0) {
-      saveSlots(filtered);
+    } catch (error) {
+      console.warn('Error al depurar slots en lote en el backend:', error);
     }
-    return count;
+    return 0;
   };
 
   return (
@@ -556,6 +605,7 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
       fetchSlots,
       fetchMisReservas,
       fetchManagementBookings,
+      fetchBookingDetail,
       createBooking,
       cancelBooking,
       generateScheduleMassive,

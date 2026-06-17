@@ -3,12 +3,64 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useBooking } from '../context/BookingContext';
 import { useCatalog } from '../context/CatalogContext';
 import { useAuth } from '../context/AuthContext';
+import Swal from 'sweetalert2';
 
 const AdminDashboardView: React.FC = () => {
   const navigate = useNavigate();
   const { bookings, slots, fetchManagementBookings } = useBooking();
-  const { attractions, getSubcategoryById } = useCatalog();
+  const { attractions, getSubcategoryById, deleteAttraction } = useCatalog();
   const { token } = useAuth();
+
+  const handleDeleteAttraction = (id: string, name: string) => {
+    if (!token) {
+      Swal.fire({
+        title: 'Error',
+        text: 'No tienes una sesión activa o autorizada.',
+        icon: 'error',
+        confirmButtonColor: '#ba1a1a'
+      });
+      return;
+    }
+
+    Swal.fire({
+      title: '¿Eliminar Experiencia?',
+      text: `¿Estás seguro de que deseas eliminar la atracción "${name}"? Esta acción no se puede deshacer.`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#ba1a1a',
+      cancelButtonColor: '#747782',
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar'
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        try {
+          const res = await deleteAttraction(id, token);
+          if (res.success) {
+            Swal.fire({
+              title: 'Eliminada',
+              text: 'La atracción ha sido eliminada del catálogo.',
+              icon: 'success',
+              confirmButtonColor: '#0058bc'
+            });
+          } else {
+            Swal.fire({
+              title: 'Error',
+              text: 'No se pudo eliminar la atracción.',
+              icon: 'error',
+              confirmButtonColor: '#ba1a1a'
+            });
+          }
+        } catch (error) {
+          Swal.fire({
+            title: 'Error',
+            text: 'Ocurrió un error al intentar eliminar la atracción.',
+            icon: 'error',
+            confirmButtonColor: '#ba1a1a'
+          });
+        }
+      }
+    });
+  };
 
   useEffect(() => {
     if (token) {
@@ -266,6 +318,13 @@ const AdminDashboardView: React.FC = () => {
                     title="Editar"
                   >
                     <span className="material-symbols-outlined text-xs">edit</span>
+                  </button>
+                  <button 
+                    onClick={() => handleDeleteAttraction(a.id, a.name)}
+                    className="p-1.5 rounded-lg bg-white border border-surface-variant hover:border-error hover:text-error text-outline transition-colors cursor-pointer flex items-center justify-center"
+                    title="Eliminar"
+                  >
+                    <span className="material-symbols-outlined text-xs">delete</span>
                   </button>
                   <span 
                     className={`w-2.5 h-2.5 rounded-full ${

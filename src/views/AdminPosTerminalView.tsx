@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useCatalog } from '../context/CatalogContext';
 import { useBooking } from '../context/BookingContext';
+import { useAuth } from '../context/AuthContext';
 import Swal from 'sweetalert2';
 
 interface PosPassenger {
@@ -16,6 +17,7 @@ interface PosPassenger {
 const AdminPosTerminalView: React.FC = () => {
   const { attractions } = useCatalog();
   const { slots, createBooking } = useBooking();
+  const { token } = useAuth();
 
   const [selectedAttractionId, setSelectedAttractionId] = useState('');
   const [selectedOptionId, setSelectedOptionId] = useState('');
@@ -158,7 +160,7 @@ const AdminPosTerminalView: React.FC = () => {
     };
 
     try {
-      const result = await createBooking('taquilla-operator-id', bookingRequest, null);
+      const result = await createBooking('taquilla-operator-id', bookingRequest, token);
 
       if (result.success && result.booking) {
         Swal.fire({

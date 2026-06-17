@@ -52,7 +52,7 @@ const AdminScheduleView: React.FC = () => {
     );
   };
 
-  const executeGenerate = (e: React.FormEvent) => {
+  const executeGenerate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedOptionId) {
       Swal.fire({
@@ -84,7 +84,7 @@ const AdminScheduleView: React.FC = () => {
       return;
     }
 
-    const createdCount = generateScheduleMassive(selectedOptionId, {
+    const createdCount = await generateScheduleMassive(selectedOptionId, {
       startDate: genStartDate,
       endDate: genEndDate,
       startTime: genStartTime,
@@ -124,9 +124,9 @@ const AdminScheduleView: React.FC = () => {
       cancelButtonColor: '#747782',
       confirmButtonText: 'Sí, depurar slots',
       cancelButtonText: 'Cancelar'
-    }).then((result) => {
+    }).then(async (result) => {
       if (result.isConfirmed) {
-        const deletedCount = bulkDeleteSlots(selectedOptionId, delStartDate, delEndDate);
+        const deletedCount = await bulkDeleteSlots(selectedOptionId, delStartDate, delEndDate);
         
         Swal.fire({
           title: 'Depuración Completada',
