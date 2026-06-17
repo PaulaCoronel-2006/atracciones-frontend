@@ -58,14 +58,14 @@ const AdminAttractionEditView: React.FC = () => {
   const { token } = useAuth();
   
   const { 
-    attractions, 
     locations, 
     subcategories, 
     tags, 
     inclusions, 
     getCategoryById, 
     addAttraction, 
-    updateAttraction 
+    updateAttraction,
+    fetchCompleteAttraction
   } = useCatalog();
 
   const { slots, generateScheduleMassive, bulkDeleteSlots } = useBooking();
@@ -73,6 +73,7 @@ const AdminAttractionEditView: React.FC = () => {
   const isEditing = !!id;
   const [currentStep, setCurrentStep] = useState<number>(1);
   const [isSaved, setIsSaved] = useState<boolean>(false);
+  const [isLoadingDetail, setIsLoadingDetail] = useState<boolean>(false);
   const hasCheckedDraft = React.useRef(false);
 
   // Estados de Ubicación Jerárquica
@@ -108,34 +109,40 @@ const AdminAttractionEditView: React.FC = () => {
 
   // Cargar datos al editar o creación limpia
   useEffect(() => {
-    if (isEditing && id) {
-      const attraction = attractions.find(a => a.id === id);
-      if (attraction) {
-        setForm(JSON.parse(JSON.stringify(attraction))); // Copia profunda
-        
-        // Reconstruir cascada
-        const city = locations.find(l => l.id === attraction.location_id);
-        if (city) {
-          setSelectedCityId(city.id);
-          const state = locations.find(l => l.id === city.parentId);
-          if (state) {
-            setSelectedStateId(state.id);
-            const country = locations.find(l => l.id === state.parentId);
-            if (country) {
-              setSelectedCountryId(country.id);
+    if (isEditing && id && token) {
+      setIsLoadingDetail(true);
+      fetchCompleteAttraction(id, token).then(attraction => {
+        setIsLoadingDetail(false);
+        if (attraction) {
+          setForm(JSON.parse(JSON.stringify(attraction))); // Copia profunda
+          
+          // Reconstruir cascada
+          const city = locations.find(l => l.id === attraction.location_id);
+          if (city) {
+            setSelectedCityId(city.id);
+            const state = locations.find(l => l.id === city.parentId);
+            if (state) {
+              setSelectedStateId(state.id);
+              const country = locations.find(l => l.id === state.parentId);
+              if (country) {
+                setSelectedCountryId(country.id);
+              }
             }
           }
+        } else {
+          Swal.fire({
+            title: 'Atracción no encontrada',
+            text: 'La atracción especificada no existe en el sistema o no se pudo cargar su información detallada.',
+            icon: 'error',
+            confirmButtonColor: '#0058bc'
+          });
+          navigate('/admin');
         }
-      } else {
-        Swal.fire({
-          title: 'Atracción no encontrada',
-          text: 'La atracción especificada no existe en el sistema.',
-          icon: 'error',
-          confirmButtonColor: '#0058bc'
-        });
-        navigate('/admin');
-      }
-    } else {
+      }).catch(err => {
+        setIsLoadingDetail(false);
+        console.error('Error al cargar la atracción completa:', err);
+      });
+    } else if (!isEditing) {
       if (hasCheckedDraft.current) return;
       hasCheckedDraft.current = true;
 
@@ -185,7 +192,7 @@ const AdminAttractionEditView: React.FC = () => {
         resetToCleanForm();
       }
     }
-  }, [id, isEditing, attractions, locations, subcategories, navigate]);
+  }, [id, isEditing, token, locations, subcategories, navigate, fetchCompleteAttraction]);
 
   // Autoguardado dinámico de borrador local
   useEffect(() => {
@@ -813,6 +820,15 @@ const AdminAttractionEditView: React.FC = () => {
       });
     }
   };
+
+  if (isLoadingDetail) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 py-32 flex flex-col items-center justify-center gap-4 text-center">
+        <div className="w-12 h-12 rounded-full border-4 border-slate-200 border-t-secondary animate-spin"></div>
+        <p className="text-sm font-semibold text-primary">Cargando detalles de la experiencia...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col gap-6 text-left">

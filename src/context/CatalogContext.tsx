@@ -91,6 +91,7 @@ interface CatalogContextType {
   getAttractionById: (id: string) => AttractionDetail | undefined;
   fetchAttractions: () => Promise<{ success: boolean }>;
   fetchAttractionBySlug: (slug: string) => Promise<AttractionDetail | undefined>;
+  fetchCompleteAttraction: (id: string, token: string) => Promise<AttractionDetail | undefined>;
   addAttraction: (attractionData: Partial<AttractionDetail>, token: string) => Promise<{ success: boolean; attraction?: AttractionDetail }>;
   updateAttraction: (id: string, updatedData: Partial<AttractionDetail>, token: string) => Promise<{ success: boolean }>;
   deleteAttraction: (id: string, token: string) => Promise<{ success: boolean }>;
@@ -391,26 +392,178 @@ export const CatalogProvider: React.FC<{ children: React.ReactNode }> = ({ child
     return getAttractionBySlug(slug);
   };
 
+  const fetchCompleteAttraction = async (id: string, token: string) => {
+    try {
+      const baseUrl = import.meta.env.VITE_API_BASE_URL;
+      const response = await fetch(`${baseUrl}/catalog/attraction/${id}/complete`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      const result = await response.json();
+      if (response.ok) {
+        const detail = result.success ? result.data : result;
+        
+        const loc = locations.find(l => l.name.toLowerCase() === detail.locationName?.toLowerCase());
+        const locationId = loc ? loc.id : detail.locationId || '33333333-3333-3333-3333-333333333333';
+
+        const subcat = subcategories.find(s => s.name.toLowerCase() === detail.subcategoryName?.toLowerCase());
+        const subcategoryId = subcat ? subcat.id : detail.subcategoryId || 's3';
+
+        const item: AttractionDetail = {
+          id: detail.id,
+          name: detail.name,
+          slug: detail.slug,
+          description: detail.descriptionFull || detail.descriptionShort || '',
+          price_base: detail.products?.[0]?.priceTiers?.[0]?.price || 0.0,
+          rating: detail.ratingAverage || 5.0,
+          review_count: detail.ratingCount || 0,
+          location_id: locationId,
+          subcategory_id: subcategoryId,
+          media: detail.gallery?.map((m: any) => ({
+            url: m.url,
+            is_main: m.isMain
+          })) || [{ id: 'm-default', url: 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=800', is_main: true }],
+          inclusions: detail.inclusions?.map((inc: any) => ({
+            inclusion_item_id: inc.inclusionItemId || inc.id,
+            type: inc.type === 'not_included' ? 'excluded' : inc.type
+          })) || [],
+          itinerary: detail.itinerary?.stops?.map((stop: any) => ({
+            stop_number: stop.stopNumber,
+            name: stop.name,
+            duration: stop.durationMinutes ? `${stop.durationMinutes}m` : '30m',
+            is_included: stop.admissionType === 'included'
+          })) || [],
+          product_options: detail.products?.map((po: any) => ({
+            id: po.id,
+            title: po.title,
+            price_tiers: po.priceTiers?.map((pt: any) => ({
+              label: pt.categoryName || 'Adulto',
+              price: pt.price
+            })) || []
+          })) || [],
+          location_coords: {
+            lat: detail.latitude ? Number(detail.latitude) : -0.1807,
+            lng: detail.longitude ? Number(detail.longitude) : -78.4678,
+            placeName: detail.meetingPoint || detail.address || 'Quito, Ecuador'
+          },
+          tags: detail.tags?.map((t: any) => t.id) || [],
+          is_active: detail.isActive ?? true,
+          is_published: detail.isPublished ?? true
+        };
+
+        return item;
+      }
+    } catch (error) {
+      console.error('Error fetching complete attraction:', error);
+    }
+    return undefined;
+  };
+
+  const buildCompletePayload = (attractionData: Partial<AttractionDetail>) => {
+    const parseDuration = (dur: string | undefined): number => {
+      if (!dur) return 30;
+      const clean = dur.toLowerCase().trim();
+      if (clean.includes('h')) {
+        const hours = parseFloat(clean) || 1;
+        return Math.round(hours * 60);
+      }
+      return parseInt(clean) || 30;
+    };
+
+    return {
+      name: attractionData.name || '',
+      locationId: mapMockIdToDbGuid(attractionData.location_id),
+      subcategoryId: mapMockIdToDbGuid(attractionData.subcategory_id),
+      descriptionShort: attractionData.description || '',
+      descriptionFull: attractionData.description || '',
+      address: attractionData.location_coords?.placeName || 'Quito, Ecuador',
+      latitude: attractionData.location_coords?.lat || -0.2201,
+      longitude: attractionData.location_coords?.lng || -78.5122,
+      meetingPoint: attractionData.location_coords?.placeName || 'Quito, Ecuador',
+      difficultyLevel: 'moderate',
+      translations: [
+        {
+          languageId: 1,
+          name: attractionData.name || '',
+          descriptionShort: attractionData.description || '',
+          descriptionFull: attractionData.description || '',
+          meetingPoint: attractionData.location_coords?.placeName || 'Quito, Ecuador'
+        }
+      ],
+      guideLanguages: [
+        {
+          languageId: 1,
+          guideType: 'live'
+        }
+      ],
+      media: (attractionData.media || []).map((m, idx) => ({
+        mediaTypeId: 1,
+        url: m.url,
+        title: attractionData.name || '',
+        isMain: m.is_main,
+        sortOrder: idx
+      })),
+      tags: (attractionData.tags || []).map(t => mapMockIdToDbGuid(t)),
+      inclusions: (attractionData.inclusions || []).map(inc => ({
+        inclusionItemId: inc.inclusion_item_id,
+        type: inc.type === 'excluded' ? 'not_included' : inc.type
+      })),
+      products: (attractionData.product_options || []).map(opt => ({
+        title: opt.title,
+        description: opt.title,
+        durationMinutes: 120,
+        durationDescription: '2h',
+        cancelPolicyHours: 24,
+        cancelPolicyText: 'Cancelación gratuita hasta 24 horas antes',
+        maxGroupSize: 20,
+        minParticipants: 1,
+        isPrivate: false,
+        priceTiers: (opt.price_tiers || []).map((pt: any) => {
+          let ticketCategoryId = '77777777-7777-7777-7777-777777777777'; // Default a Adulto
+          const lbl = (pt.label || '').toLowerCase();
+          if (lbl.includes('niño') || lbl.includes('child') || lbl.includes('nino')) {
+            ticketCategoryId = '88888888-8888-8888-8888-888888888888';
+          }
+          return {
+            ticketCategoryId: ticketCategoryId,
+            price: pt.price === '' ? 0.0 : Number(pt.price),
+            currencyCode: 'USD'
+          };
+        })
+      })),
+      itinerary: attractionData.itinerary && attractionData.itinerary.length > 0 ? {
+        languageId: 1,
+        overview: attractionData.description || '',
+        stops: attractionData.itinerary.map((s, idx) => ({
+          name: s.name,
+          description: s.name,
+          stayTimeMinutes: parseDuration(s.duration),
+          latitude: attractionData.location_coords?.lat || -0.2201,
+          longitude: attractionData.location_coords?.lng || -78.5122,
+          stopNumber: s.stop_number || (idx + 1),
+          admissionType: s.is_included ? 'included' : 'optional'
+        }))
+      } : null
+    };
+  };
+
   const addAttraction = async (attractionData: Partial<AttractionDetail>, token: string) => {
     try {
       const baseUrl = import.meta.env.VITE_API_BASE_URL;
-      const response = await fetch(`${baseUrl}/catalog/attraction`, {
+      const payload = buildCompletePayload(attractionData);
+      
+      console.log('CatalogContext: addAttraction enviando payload completo:', payload);
+
+      const response = await fetch(`${baseUrl}/catalog/attraction/complete`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({
-          name: attractionData.name,
-          locationId: mapMockIdToDbGuid(attractionData.location_id),
-          subcategoryId: mapMockIdToDbGuid(attractionData.subcategory_id),
-          descriptionShort: attractionData.description || '',
-          descriptionFull: attractionData.description || '',
-          address: attractionData.location_coords?.placeName || 'Quito, Ecuador',
-          latitude: attractionData.location_coords?.lat || -0.2201,
-          longitude: attractionData.location_coords?.lng || -78.5122,
-          difficultyLevel: 'moderate'
-        })
+        body: JSON.stringify(payload)
       });
 
       const result = await response.json();
@@ -420,6 +573,7 @@ export const CatalogProvider: React.FC<{ children: React.ReactNode }> = ({ child
       }
       return { success: false, message: result.message || 'Error al guardar en el servidor.' };
     } catch (error) {
+      console.error('Error in addAttraction backend post, applying fallback:', error);
       // Fallback local
       const newAttraction: AttractionDetail = {
         id: crypto.randomUUID(),
@@ -455,23 +609,17 @@ export const CatalogProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const updateAttraction = async (id: string, updatedData: Partial<AttractionDetail>, token: string) => {
     try {
       const baseUrl = import.meta.env.VITE_API_BASE_URL;
-      const response = await fetch(`${baseUrl}/catalog/attraction/${id}`, {
+      const payload = buildCompletePayload(updatedData);
+
+      console.log(`CatalogContext: updateAttraction(${id}) enviando payload completo:`, payload);
+
+      const response = await fetch(`${baseUrl}/catalog/attraction/${id}/complete`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({
-          name: updatedData.name,
-          locationId: mapMockIdToDbGuid(updatedData.location_id),
-          subcategoryId: mapMockIdToDbGuid(updatedData.subcategory_id),
-          descriptionShort: updatedData.description || '',
-          descriptionFull: updatedData.description || '',
-          address: updatedData.location_coords?.placeName || 'Quito, Ecuador',
-          latitude: updatedData.location_coords?.lat || -0.2201,
-          longitude: updatedData.location_coords?.lng || -78.5122,
-          difficultyLevel: 'moderate'
-        })
+        body: JSON.stringify(payload)
       });
 
       const result = await response.json();
@@ -481,6 +629,7 @@ export const CatalogProvider: React.FC<{ children: React.ReactNode }> = ({ child
       }
       return { success: false, message: result.message || 'Error al actualizar en el servidor.' };
     } catch (error) {
+      console.error('Error in updateAttraction backend put, applying fallback:', error);
       // Fallback local
       const newAttractions = attractions.map(a => {
         if (a.id === id) {
@@ -675,6 +824,7 @@ export const CatalogProvider: React.FC<{ children: React.ReactNode }> = ({ child
       getAttractionById,
       fetchAttractions,
       fetchAttractionBySlug,
+      fetchCompleteAttraction,
       addAttraction,
       updateAttraction,
       deleteAttraction,
