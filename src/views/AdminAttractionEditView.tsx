@@ -761,10 +761,41 @@ const AdminAttractionEditView: React.FC = () => {
 
   // --- GUARDADO DEFINITIVO EN SUPABASE ---
   const handleSave = async () => {
-    if (!validateStep(1) || !validateStep(2)) {
+    if (!validateStep(1)) {
+      setCurrentStep(1);
       Swal.fire({
-        title: 'Datos Incompletos',
-        text: 'Por favor, revisa la información de los pasos 1 y 2 antes de publicar.',
+        title: 'Paso 1 Incompleto',
+        text: 'Por favor, completa los campos requeridos de información básica.',
+        icon: 'warning',
+        confirmButtonColor: '#0058bc'
+      });
+      return;
+    }
+    if (!validateStep(2)) {
+      setCurrentStep(2);
+      Swal.fire({
+        title: 'Paso 2 Incompleto',
+        text: 'Por favor, especifica la ubicación y el punto de encuentro.',
+        icon: 'warning',
+        confirmButtonColor: '#0058bc'
+      });
+      return;
+    }
+    if (!validateStep(3)) {
+      setCurrentStep(3);
+      Swal.fire({
+        title: 'Modalidades Requeridas',
+        text: 'Debes configurar al menos una modalidad (producto) para tu atracción con sus precios.',
+        icon: 'warning',
+        confirmButtonColor: '#0058bc'
+      });
+      return;
+    }
+    if (!validateStep(4)) {
+      setCurrentStep(4);
+      Swal.fire({
+        title: 'Galería Vacía',
+        text: 'Por favor, agrega al menos una imagen en la galería para la publicación.',
         icon: 'warning',
         confirmButtonColor: '#0058bc'
       });
