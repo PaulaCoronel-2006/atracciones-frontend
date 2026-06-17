@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useCatalog } from '../context/CatalogContext';
 import { useBooking } from '../context/BookingContext';
@@ -15,8 +15,8 @@ interface PosPassenger {
 }
 
 const AdminPosTerminalView: React.FC = () => {
-  const { attractions } = useCatalog();
-  const { slots, createBooking } = useBooking();
+  const { attractions, fetchCompleteAttraction } = useCatalog();
+  const { slots, createBooking, fetchSlots } = useBooking();
   const { token } = useAuth();
 
   const [selectedAttractionId, setSelectedAttractionId] = useState('');
@@ -27,6 +27,24 @@ const AdminPosTerminalView: React.FC = () => {
   const [passengersList, setPassengersList] = useState<PosPassenger[]>([
     { firstName: '', lastName: '', documentType: 'Cédula', documentNumber: '', priceTierLabel: 'Adulto', unitPrice: 40.00 }
   ]);
+
+  // Cargar atracción detallada de forma asíncrona cuando se selecciona
+  useEffect(() => {
+    if (selectedAttractionId && token) {
+      fetchCompleteAttraction(selectedAttractionId, token).then(detailedAttr => {
+        if (detailedAttr && detailedAttr.product_options && detailedAttr.product_options.length > 0) {
+          setSelectedOptionId(detailedAttr.product_options[0].id);
+        }
+      });
+    }
+  }, [selectedAttractionId, token, fetchCompleteAttraction]);
+
+  // Cargar slots reales de la modalidad cuando cambia
+  useEffect(() => {
+    if (selectedOptionId) {
+      fetchSlots(selectedOptionId);
+    }
+  }, [selectedOptionId, fetchSlots]);
 
   const activeAttraction = useMemo(() => {
     return attractions.find(a => a.id === selectedAttractionId) || null;
@@ -44,10 +62,6 @@ const AdminPosTerminalView: React.FC = () => {
     setSelectedAttractionId(attractionId);
     setSelectedOptionId('');
     setSelectedSlotId('');
-    const attr = attractions.find(a => a.id === attractionId);
-    if (attr && attr.product_options.length > 0) {
-      setSelectedOptionId(attr.product_options[0].id);
-    }
   };
 
   // Pronóstico de disponibilidad (próximos 5 slots con cupo libre)

@@ -177,12 +177,12 @@ export const CatalogProvider: React.FC<{ children: React.ReactNode }> = ({ child
   ]);
 
   const [inclusions] = useState<InclusionItem[]>([
-    { id: 'i1', icon_slug: 'guide', default_text: 'Guía profesional bilingüe certificado' },
-    { id: 'i2', icon_slug: 'transport', default_text: 'Transporte de ida y vuelta en minibús premium' },
-    { id: 'i3', icon_slug: 'food', default_text: 'Almuerzo gourmet de tres platos con bebidas locales' },
-    { id: 'i4', icon_slug: 'ticket', default_text: 'Entradas prioritarias de acceso rápido (sin filas)' },
-    { id: 'i5', icon_slug: 'equipment', default_text: 'Equipo completo de snorkel (traje de neopreno y aletas)' },
-    { id: 'i6', icon_slug: 'insurance', default_text: 'Seguro de accidentes para pasajeros' }
+    { id: '11111111-2222-3333-4444-555555555501', icon_slug: 'guide', default_text: 'Guía profesional bilingüe certificado' },
+    { id: '11111111-2222-3333-4444-555555555502', icon_slug: 'transport', default_text: 'Transporte de ida y vuelta en minibús premium' },
+    { id: '11111111-2222-3333-4444-555555555503', icon_slug: 'food', default_text: 'Almuerzo gourmet de tres platos con bebidas locales' },
+    { id: '11111111-2222-3333-4444-555555555504', icon_slug: 'ticket', default_text: 'Entradas prioritarias de acceso rápido (sin filas)' },
+    { id: '11111111-2222-3333-4444-555555555505', icon_slug: 'equipment', default_text: 'Equipo completo de snorkel (traje de neopreno y aletas)' },
+    { id: '11111111-2222-3333-4444-555555555506', icon_slug: 'insurance', default_text: 'Seguro de accidentes para pasajeros' }
   ]);
 
   const [attractions, setAttractions] = useState<AttractionDetail[]>([]);
@@ -453,6 +453,14 @@ export const CatalogProvider: React.FC<{ children: React.ReactNode }> = ({ child
           is_active: detail.isActive ?? true,
           is_published: detail.isPublished ?? true
         };
+
+        setAttractions(prev => {
+          if (prev.some(a => a.id === id)) {
+            return prev.map(a => a.id === id ? item : a);
+          } else {
+            return [...prev, item];
+          }
+        });
 
         return item;
       }

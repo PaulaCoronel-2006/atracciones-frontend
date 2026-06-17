@@ -1,7 +1,8 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useCatalog } from '../context/CatalogContext';
 import { useBooking } from '../context/BookingContext';
+import { useAuth } from '../context/AuthContext';
 import Swal from 'sweetalert2';
 
 const days = [
@@ -15,8 +16,9 @@ const days = [
 ];
 
 const AdminScheduleView: React.FC = () => {
-  const { attractions } = useCatalog();
-  const { slots, generateScheduleMassive, bulkDeleteSlots } = useBooking();
+  const { token } = useAuth();
+  const { attractions, fetchCompleteAttraction } = useCatalog();
+  const { slots, generateScheduleMassive, bulkDeleteSlots, fetchSlots } = useBooking();
 
   const [selectedAttractionId, setSelectedAttractionId] = useState('');
   const [selectedOptionId, setSelectedOptionId] = useState('');
@@ -33,13 +35,27 @@ const AdminScheduleView: React.FC = () => {
   const [delStartDate, setDelStartDate] = useState('');
   const [delEndDate, setDelEndDate] = useState('');
 
+  // Cargar atracción detallada de forma asíncrona cuando se selecciona
+  useEffect(() => {
+    if (selectedAttractionId && token) {
+      fetchCompleteAttraction(selectedAttractionId, token).then(detailedAttr => {
+        if (detailedAttr && detailedAttr.product_options && detailedAttr.product_options.length > 0) {
+          setSelectedOptionId(detailedAttr.product_options[0].id);
+        }
+      });
+    }
+  }, [selectedAttractionId, token, fetchCompleteAttraction]);
+
+  // Cargar slots reales de la modalidad cuando cambia
+  useEffect(() => {
+    if (selectedOptionId) {
+      fetchSlots(selectedOptionId);
+    }
+  }, [selectedOptionId, fetchSlots]);
+
   const handleAttractionChange = (attractionId: string) => {
     setSelectedAttractionId(attractionId);
     setSelectedOptionId('');
-    const attr = attractions.find(a => a.id === attractionId);
-    if (attr && attr.product_options.length > 0) {
-      setSelectedOptionId(attr.product_options[0].id);
-    }
   };
 
   const activeAttraction = useMemo(() => {
