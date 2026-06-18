@@ -618,6 +618,17 @@ const AdminAttractionEditView: React.FC = () => {
       return;
     }
 
+    const isGuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(activeOptionId);
+    if (!isGuid) {
+      Swal.fire({
+        title: 'Identificador temporal',
+        text: 'Esta modalidad aún no ha sido guardada en catálogo. Guarda los cambios en el paso de revisión antes de programar disponibilidad.',
+        icon: 'error',
+        confirmButtonColor: '#0058bc'
+      });
+      return;
+    }
+
     if (!genStartDate || !genEndDate) {
       Swal.fire({
         title: 'Fechas incompletas',
@@ -671,6 +682,17 @@ const AdminAttractionEditView: React.FC = () => {
   const handleDeleteSlots = (e: React.FormEvent) => {
     e.preventDefault();
     if (!activeOptionId) return;
+
+    const isGuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(activeOptionId);
+    if (!isGuid) {
+      Swal.fire({
+        title: 'Identificador temporal',
+        text: 'No es posible limpiar horarios de una modalidad que no se ha guardado en catálogo.',
+        icon: 'error',
+        confirmButtonColor: '#0058bc'
+      });
+      return;
+    }
 
     if (!delStartDate || !delEndDate) {
       Swal.fire({
@@ -1607,195 +1629,216 @@ const AdminAttractionEditView: React.FC = () => {
 
             {/* PASO 6: FECHAS, HORARIOS E INVENTARIO (SLOTS) */}
             {currentStep === 6 && (
-              <div className="flex flex-col gap-6">
-                <div>
-                  <h3 className="text-lg font-bold text-primary font-sans">Disponibilidad, Horarios e Inventario</h3>
-                  <p className="text-xs text-outline mt-0.5">Programa los días, horas de salida y capacidad de cupos permitidos por salida.</p>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Generador Masivo */}
-                  <form onSubmit={handleGenerateSlots} className="p-5 rounded-2xl border border-surface-variant bg-background flex flex-col gap-4">
-                    <h4 className="text-xs font-bold text-primary uppercase border-b border-surface-variant pb-2 flex items-center gap-1">
-                      <span className="material-symbols-outlined text-base">date_range</span>
-                      <span>Generación Masiva de Slots</span>
-                    </h4>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="flex flex-col gap-1">
-                        <label className="text-[10px] text-outline font-semibold uppercase">Fecha Inicio</label>
-                        <input 
-                          type="date" 
-                          value={genStartDate}
-                          onChange={(e) => setGenStartDate(e.target.value)}
-                          className="px-3 py-2 rounded-xl bg-white border border-outline-variant text-xs text-primary focus:outline-none"
-                        />
-                      </div>
-                      <div className="flex flex-col gap-1">
-                        <label className="text-[10px] text-outline font-semibold uppercase">Fecha Fin</label>
-                        <input 
-                          type="date" 
-                          value={genEndDate}
-                          onChange={(e) => setGenEndDate(e.target.value)}
-                          className="px-3 py-2 rounded-xl bg-white border border-outline-variant text-xs text-primary focus:outline-none"
-                        />
-                      </div>
+              (() => {
+                const isGuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(activeOptionId);
+                if (!isGuid) {
+                  return (
+                    <div className="flex flex-col items-center justify-center text-center p-12 bg-slate-50 border border-dashed border-outline-variant rounded-3xl gap-4">
+                      <span className="material-symbols-outlined text-5xl text-outline">info</span>
+                      <h4 className="text-lg font-bold text-primary">Atracción o Modalidades sin Guardar</h4>
+                      <p className="text-xs text-outline max-w-md">Para poder programar y generar horarios de disponibilidad, primero debes guardar la atracción en el paso de revisión (Paso 7) para asignar identificadores oficiales en la base de datos.</p>
+                      <button
+                        type="button"
+                        onClick={() => setCurrentStep(7)}
+                        className="px-6 py-2.5 rounded-xl text-xs font-bold bg-[#0058bc] text-white hover:bg-blue-700 transition-all cursor-pointer mt-2"
+                      >
+                        Ir al Paso de Guardar
+                      </button>
+                    </div>
+                  );
+                }
+                return (
+                  <div className="flex flex-col gap-6">
+                    <div>
+                      <h3 className="text-lg font-bold text-primary font-sans">Disponibilidad, Horarios e Inventario</h3>
+                      <p className="text-xs text-outline mt-0.5">Programa los días, horas de salida y capacidad de cupos permitidos por salida.</p>
                     </div>
 
-                    <div className="grid grid-cols-3 gap-4">
-                      <div className="flex flex-col gap-1">
-                        <label className="text-[10px] text-outline font-semibold uppercase">Hora Salida</label>
-                        <input 
-                          type="time" 
-                          value={genStartTime}
-                          onChange={(e) => setGenStartTime(e.target.value)}
-                          className="px-3 py-2 rounded-xl bg-white border border-outline-variant text-xs text-primary focus:outline-none"
-                        />
-                      </div>
-                      <div className="flex flex-col gap-1">
-                        <label className="text-[10px] text-outline font-semibold uppercase">Hora Retorno</label>
-                        <input 
-                          type="time" 
-                          value={genEndTime}
-                          onChange={(e) => setGenEndTime(e.target.value)}
-                          className="px-3 py-2 rounded-xl bg-white border border-outline-variant text-xs text-primary focus:outline-none"
-                        />
-                      </div>
-                      <div className="flex flex-col gap-1">
-                        <label className="text-[10px] text-outline font-semibold uppercase">Cupos Máx</label>
-                        <input 
-                          type="number" 
-                          value={genCapacity}
-                          onChange={(e) => {
-                            const val = e.target.value;
-                            setGenCapacity(val === '' ? '' : Math.max(0, Number(val)));
-                          }}
-                          min="0"
-                          className="px-3 py-2 rounded-xl bg-white border border-outline-variant text-xs text-primary text-center font-bold focus:outline-none"
-                        />
-                      </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {/* Generador Masivo */}
+                      <form onSubmit={handleGenerateSlots} className="p-5 rounded-2xl border border-surface-variant bg-background flex flex-col gap-4">
+                        <h4 className="text-xs font-bold text-primary uppercase border-b border-surface-variant pb-2 flex items-center gap-1">
+                          <span className="material-symbols-outlined text-base">date_range</span>
+                          <span>Generación Masiva de Slots</span>
+                        </h4>
+
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="flex flex-col gap-1">
+                            <label className="text-[10px] text-outline font-semibold uppercase">Fecha Inicio</label>
+                            <input 
+                              type="date" 
+                              value={genStartDate}
+                              onChange={(e) => setGenStartDate(e.target.value)}
+                              className="px-3 py-2 rounded-xl bg-white border border-outline-variant text-xs text-primary focus:outline-none"
+                            />
+                          </div>
+                          <div className="flex flex-col gap-1">
+                            <label className="text-[10px] text-outline font-semibold uppercase">Fecha Fin</label>
+                            <input 
+                              type="date" 
+                              value={genEndDate}
+                              onChange={(e) => setGenEndDate(e.target.value)}
+                              className="px-3 py-2 rounded-xl bg-white border border-outline-variant text-xs text-primary focus:outline-none"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-3 gap-4">
+                          <div className="flex flex-col gap-1">
+                            <label className="text-[10px] text-outline font-semibold uppercase">Hora Salida</label>
+                            <input 
+                              type="time" 
+                              value={genStartTime}
+                              onChange={(e) => setGenStartTime(e.target.value)}
+                              className="px-3 py-2 rounded-xl bg-white border border-outline-variant text-xs text-primary focus:outline-none"
+                            />
+                          </div>
+                          <div className="flex flex-col gap-1">
+                            <label className="text-[10px] text-outline font-semibold uppercase">Hora Retorno</label>
+                            <input 
+                              type="time" 
+                              value={genEndTime}
+                              onChange={(e) => setGenEndTime(e.target.value)}
+                              className="px-3 py-2 rounded-xl bg-white border border-outline-variant text-xs text-primary focus:outline-none"
+                            />
+                          </div>
+                          <div className="flex flex-col gap-1">
+                            <label className="text-[10px] text-outline font-semibold uppercase">Cupos Máx</label>
+                            <input 
+                              type="number" 
+                              value={genCapacity}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setGenCapacity(val === '' ? '' : Math.max(0, Number(val)));
+                              }}
+                              min="0"
+                              className="px-3 py-2 rounded-xl bg-white border border-outline-variant text-xs text-primary text-center font-bold focus:outline-none"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Selector de Días */}
+                        <div className="flex flex-col gap-1.5 text-left">
+                          <label className="text-[10px] text-outline font-semibold uppercase">Días Operativos</label>
+                          <div className="flex flex-wrap gap-1.5">
+                            {[
+                              { label: 'Lu', val: 1 },
+                              { label: 'Ma', val: 2 },
+                              { label: 'Mi', val: 3 },
+                              { label: 'Ju', val: 4 },
+                              { label: 'Vi', val: 5 },
+                              { label: 'Sa', val: 6 },
+                              { label: 'Do', val: 0 }
+                            ].map(d => {
+                              const active = genDaysOfWeek.includes(d.val);
+                              return (
+                                <button
+                                  key={d.val}
+                                  type="button"
+                                  onClick={() => toggleGenDay(d.val)}
+                                  className={`w-8 h-8 rounded-lg text-xs font-bold border transition-all cursor-pointer ${
+                                    active ? 'bg-secondary border-secondary text-white' : 'bg-white border-outline-variant text-outline'
+                                  }`}
+                                >
+                                  {d.label}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+
+                        <button 
+                          type="button"
+                          onClick={handleGenerateSlots}
+                          className="w-full mt-2 py-3 rounded-xl text-xs font-bold bg-[#0058bc] text-white hover:bg-blue-700 transition-all cursor-pointer"
+                        >
+                          Generar Plantilla de Slots
+                        </button>
+                      </form>
+
+                      {/* Depuración en Lote */}
+                      <form onSubmit={handleDeleteSlots} className="p-5 rounded-2xl border border-surface-variant bg-background flex flex-col gap-4 h-fit">
+                        <h4 className="text-xs font-bold text-primary uppercase border-b border-surface-variant pb-2 flex items-center gap-1">
+                          <span className="material-symbols-outlined text-base">delete_sweep</span>
+                          <span>Limpieza y Depuración de Slots</span>
+                        </h4>
+
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="flex flex-col gap-1">
+                            <label className="text-[10px] text-outline font-semibold uppercase">Desde</label>
+                            <input 
+                              type="date" 
+                              value={delStartDate}
+                              onChange={(e) => setDelStartDate(e.target.value)}
+                              className="px-3 py-2 rounded-xl bg-white border border-outline-variant text-xs text-primary focus:outline-none"
+                            />
+                          </div>
+                          <div className="flex flex-col gap-1">
+                            <label className="text-[10px] text-outline font-semibold uppercase">Hasta</label>
+                            <input 
+                              type="date" 
+                              value={delEndDate}
+                              onChange={(e) => setDelEndDate(e.target.value)}
+                              className="px-3 py-2 rounded-xl bg-white border border-outline-variant text-xs text-primary focus:outline-none"
+                            />
+                          </div>
+                        </div>
+
+                        <button 
+                          type="button"
+                          onClick={handleDeleteSlots}
+                          className="w-full py-3 rounded-xl text-xs font-bold bg-error/15 border border-error/20 text-error hover:bg-error/20 transition-all cursor-pointer"
+                        >
+                          Eliminar Slots Vacíos
+                        </button>
+                      </form>
                     </div>
 
-                    {/* Días de la semana */}
-                    <div className="flex flex-col gap-1.5 text-left">
-                      <label className="text-[10px] text-outline font-semibold uppercase">Días Operativos</label>
-                      <div className="flex flex-wrap gap-1.5">
-                        {[
-                          { label: 'Lu', val: 1 },
-                          { label: 'Ma', val: 2 },
-                          { label: 'Mi', val: 3 },
-                          { label: 'Ju', val: 4 },
-                          { label: 'Vi', val: 5 },
-                          { label: 'Sa', val: 6 },
-                          { label: 'Do', val: 0 }
-                        ].map(d => {
-                          const active = genDaysOfWeek.includes(d.val);
-                          return (
-                            <button
-                              key={d.val}
-                              type="button"
-                              onClick={() => toggleGenDay(d.val)}
-                              className={`w-8 h-8 rounded-lg text-xs font-bold border transition-all cursor-pointer ${
-                                active ? 'bg-secondary border-secondary text-white' : 'bg-white border-outline-variant text-outline'
-                              }`}
-                            >
-                              {d.label}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-
-                    <button 
-                      type="button"
-                      onClick={handleGenerateSlots}
-                      className="w-full mt-2 py-3 rounded-xl text-xs font-bold bg-[#0058bc] text-white hover:bg-blue-700 transition-all cursor-pointer"
-                    >
-                      Generar Plantilla de Slots
-                    </button>
-                  </form>
-
-                  {/* Depuración en Lote */}
-                  <form onSubmit={handleDeleteSlots} className="p-5 rounded-2xl border border-surface-variant bg-background flex flex-col gap-4 h-fit">
-                    <h4 className="text-xs font-bold text-primary uppercase border-b border-surface-variant pb-2 flex items-center gap-1">
-                      <span className="material-symbols-outlined text-base">delete_sweep</span>
-                      <span>Limpieza y Depuración de Slots</span>
-                    </h4>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="flex flex-col gap-1">
-                        <label className="text-[10px] text-outline font-semibold uppercase">Desde</label>
-                        <input 
-                          type="date" 
-                          value={delStartDate}
-                          onChange={(e) => setDelStartDate(e.target.value)}
-                          className="px-3 py-2 rounded-xl bg-white border border-outline-variant text-xs text-primary focus:outline-none"
-                        />
-                      </div>
-                      <div className="flex flex-col gap-1">
-                        <label className="text-[10px] text-outline font-semibold uppercase">Hasta</label>
-                        <input 
-                          type="date" 
-                          value={delEndDate}
-                          onChange={(e) => setDelEndDate(e.target.value)}
-                          className="px-3 py-2 rounded-xl bg-white border border-outline-variant text-xs text-primary focus:outline-none"
-                        />
-                      </div>
-                    </div>
-
-                    <button 
-                      type="button"
-                      onClick={handleDeleteSlots}
-                      className="w-full py-3 rounded-xl text-xs font-bold bg-error/15 border border-error/20 text-error hover:bg-error/20 transition-all cursor-pointer"
-                    >
-                      Eliminar Slots Vacíos
-                    </button>
-                  </form>
-                </div>
-
-                {/* Listado de slots ya programados */}
-                <div className="flex flex-col gap-3">
-                  <h4 className="text-xs font-bold text-primary uppercase border-b border-surface-variant pb-2">Slots Generados para esta Atracción</h4>
-                  
-                  {activeSlots.length === 0 ? (
-                    <div className="text-center py-12 text-outline text-xs bg-slate-50 border border-surface-variant rounded-2xl">
-                      No has programado disponibilidad para este producto todavía.
-                    </div>
-                  ) : (
-                    <div className="max-h-60 overflow-y-auto border border-surface-variant rounded-2xl bg-white">
-                      <table className="min-w-full text-left text-xs border-collapse">
-                        <thead>
-                          <tr className="bg-slate-50 border-b border-surface-variant text-[10px] font-bold text-outline uppercase">
-                            <th className="py-2.5 px-4">Fecha</th>
-                            <th className="py-2.5 px-4">Hora</th>
-                            <th className="py-2.5 px-4">Capacidad Total</th>
-                            <th className="py-2.5 px-4">Reservas Activas</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {activeSlots.map((slot, idx) => {
-                            const bookingsCount = slot.capacityTotal - slot.capacityAvailable;
-                            return (
-                              <tr key={slot.id || idx} className="border-b border-surface-variant hover:bg-slate-50">
-                                <td className="py-2.5 px-4 font-mono font-semibold">{slot.slotDate}</td>
-                                <td className="py-2.5 px-4 font-mono">{slot.startTime}</td>
-                                <td className="py-2.5 px-4">{slot.capacityTotal} personas</td>
-                                <td className="py-2.5 px-4">
-                                  <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold ${
-                                    bookingsCount > 0 ? 'bg-success-green/15 text-success-green' : 'bg-slate-100 text-slate-500'
-                                  }`}>
-                                    {bookingsCount} ocupados
-                                  </span>
-                                </td>
+                    {/* Listado de slots ya programados */}
+                    <div className="flex flex-col gap-3">
+                      <h4 className="text-xs font-bold text-primary uppercase border-b border-surface-variant pb-2">Slots Generados para esta Atracción</h4>
+                      
+                      {activeSlots.length === 0 ? (
+                        <div className="text-center py-12 text-outline text-xs bg-slate-50 border border-surface-variant rounded-2xl">
+                          No has programado disponibilidad para este producto todavía.
+                        </div>
+                      ) : (
+                        <div className="max-h-60 overflow-y-auto border border-surface-variant rounded-2xl bg-white">
+                          <table className="min-w-full text-left text-xs border-collapse">
+                            <thead>
+                              <tr className="bg-slate-50 border-b border-surface-variant text-[10px] font-bold text-outline uppercase">
+                                <th className="py-2.5 px-4">Fecha</th>
+                                <th className="py-2.5 px-4">Hora</th>
+                                <th className="py-2.5 px-4">Capacidad Total</th>
+                                <th className="py-2.5 px-4">Reservas Activas</th>
                               </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
+                            </thead>
+                            <tbody>
+                              {activeSlots.map((slot, idx) => {
+                                const bookingsCount = slot.capacityTotal - slot.capacityAvailable;
+                                return (
+                                  <tr key={slot.id || idx} className="border-b border-surface-variant hover:bg-slate-50">
+                                    <td className="py-2.5 px-4 font-mono font-semibold">{slot.slotDate}</td>
+                                    <td className="py-2.5 px-4 font-mono">{slot.startTime}</td>
+                                    <td className="py-2.5 px-4">{slot.capacityTotal} personas</td>
+                                    <td className="py-2.5 px-4">
+                                      <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold ${
+                                        bookingsCount > 0 ? 'bg-success-green/15 text-success-green' : 'bg-slate-100 text-slate-500'
+                                      }`}>
+                                        {bookingsCount} ocupados
+                                      </span>
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
-              </div>
+                  </div>
+                );
+              })()
             )}
 
             {/* PASO 7: REVISIÓN Y PUBLICACIÓN */}

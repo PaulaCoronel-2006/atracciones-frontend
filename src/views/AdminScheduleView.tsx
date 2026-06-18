@@ -80,6 +80,17 @@ const AdminScheduleView: React.FC = () => {
       return;
     }
 
+    const isGuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(selectedOptionId);
+    if (!isGuid) {
+      Swal.fire({
+        title: 'Identificador temporal',
+        text: 'La modalidad seleccionada aún no tiene un identificador válido en el sistema. Asegúrate de guardar la atracción primero.',
+        icon: 'error',
+        confirmButtonColor: '#0058bc'
+      });
+      return;
+    }
+
     if (!genStartDate || !genEndDate) {
       Swal.fire({
         title: 'Fechas requeridas',
@@ -120,6 +131,17 @@ const AdminScheduleView: React.FC = () => {
   const executeBulkDelete = (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedOptionId) return;
+
+    const isGuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(selectedOptionId);
+    if (!isGuid) {
+      Swal.fire({
+        title: 'Identificador temporal',
+        text: 'No es posible limpiar horarios para una modalidad sin identificador válido.',
+        icon: 'error',
+        confirmButtonColor: '#0058bc'
+      });
+      return;
+    }
 
     if (!delStartDate || !delEndDate) {
       Swal.fire({
